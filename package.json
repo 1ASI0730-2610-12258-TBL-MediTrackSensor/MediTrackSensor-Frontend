@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "axios": "^1.15.2",
+    "primevue": "^4.5.5",
     "vue": "^3.5.32"
   },
   "devDependencies": {

@@ -36,3 +36,31 @@ const stats = computed(() => {
   <div class="devices-view">
     </div>
 </template>
+
+<template>
+  <div class="devices-view">
+    <header class="page-header">
+      <div class="title-group">
+        <h1 class="page-title">{{ t('monitoring.devices') }}</h1>
+        <p class="subtitle">Supervisión técnica de sensores ambientales y equipos IoT.</p>
+      </div>
+
+      <div class="header-stats">
+        <div class="header-stat-pill">
+          <div class="pill-icon blue"><i class="pi pi-tablet"></i></div>
+          <div class="pill-info">
+            <span class="v">{{ stats.total }}</span>
+            <span class="l">Dispositivos</span>
+          </div>
+        </div>
+        <div class="header-stat-pill" :class="{ alert: stats.alerts > 0 }">
+          <div class="pill-icon" :class="stats.alerts > 0 ? 'red' : 'green'"><i class="pi pi-check-circle"></i></div>
+          <div class="pill-info">
+            <span class="v">{{ stats.alerts > 0 ? stats.alerts : 'Sistema OK' }}</span>
+            <span class="l">Estado Global</span>
+          </div>
+        </div>
+      </div>
+    </header>
+  </div>
+</template>

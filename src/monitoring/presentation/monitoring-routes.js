@@ -1,4 +1,5 @@
 const viewDevices = () => import('./views/view-devices.vue');
+const controlCenter = () => import('./views/monitoring-dashboard.vue');
 
 const monitoringRoutes = [
     {
@@ -6,6 +7,12 @@ const monitoringRoutes = [
         name: 'devices',
         component: viewDevices,
         meta: { title: 'Devices' }
+    },
+    {
+        path: 'control-center',
+        name: 'control-center',
+        component: controlCenter,
+        meta: { title: 'Control Center' }
     }
 ];
 

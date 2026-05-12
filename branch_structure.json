@@ -1,0 +1,36 @@
+{
+  "default_branch": "master",
+  "branches": [
+    "develop",
+    "feature/establishments",
+    "feature/iam",
+    "feature/logistics",
+    "feature/monitoring",
+    "feature/suscriptions",
+    "master",
+    "origin",
+    "release/1.0.0"
+  ],
+  "parent": {
+    "develop": "master",
+    "feature/establishments": "master",
+    "feature/iam": "master",
+    "feature/logistics": "master",
+    "feature/monitoring": "master",
+    "feature/suscriptions": "master",
+    "master": null,
+    "origin": "master",
+    "release/1.0.0": "master"
+  },
+  "order": [
+    "master",
+    "develop",
+    "feature/establishments",
+    "feature/iam",
+    "feature/logistics",
+    "feature/monitoring",
+    "feature/suscriptions",
+    "origin",
+    "release/1.0.0"
+  ]
+}

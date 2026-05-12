@@ -78,7 +78,7 @@ const stats = computed(() => {
             </div>
             <div class="status-dot-online" :class="{ 'bg-coral': tr.door_status === 'OPEN' }"></div>
           </div>
-          
+
           <div class="op-info">
             <h3>{{ tr.type_of_transport }}</h3>
             <span class="op-id">ID UNIDAD: #{{ tr.id }}</span>

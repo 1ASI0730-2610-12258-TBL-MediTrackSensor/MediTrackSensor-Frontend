@@ -6,16 +6,16 @@ const viewOperators = () => import('./views/view-operators.vue');
 
 const establishmentRoutes = [
     {
-        path: 'establishments',
-        name: 'establishments',
-        component: viewEstablishments,
-        meta: { title: 'Establishments' }
-    },
-    {
         path: 'establishments/new',
         name: 'establishment-new',
         component: establishmentForm,
         meta: { title: 'New Establishment' }
+    },
+    {
+        path: 'establishments',
+        name: 'establishments',
+        component: viewEstablishments,
+        meta: { title: 'Establishments' }
     },
     {
         path: 'assign-operator',

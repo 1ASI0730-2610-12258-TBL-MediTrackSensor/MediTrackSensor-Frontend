@@ -223,3 +223,109 @@ const doughnutOptions = {
     legend: { display: false }
   }
 };
+
+<template>
+  <div class="dashboard-page">
+    <header class="dashboard-header">
+      <div class="header-content">
+        <h1 class="page-title">Operational Control Center</h1>
+        <div class="header-filters">
+          <pv-select 
+            v-model="selectedEstablishment" 
+            :options="db.establishments" 
+            optionLabel="establishment_name" 
+            placeholder="Establishment ID" 
+            class="minimal-select"
+          />
+          <pv-select 
+            v-model="selectedRegion" 
+            :options="regions" 
+            placeholder="Region / City" 
+            class="minimal-select"
+          />
+        </div>
+      </div>
+    </header>
+
+    <div class="bento-grid">
+      <div class="bento-card kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-label">Active Sensors</span>
+          <div class="pulse-indicator"></div>
+        </div>
+        <div class="kpi-value">124</div>
+        <div class="kpi-trend positive">+12% vs last month</div>
+      </div>
+
+      <div class="bento-card kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-label">Avg Temperature</span>
+        </div>
+        <div class="kpi-value">4.2°C</div>
+        <div class="kpi-trend stable">Stable</div>
+      </div>
+
+      <div class="bento-card kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-label">Active Transports</span>
+        </div>
+        <div class="kpi-value">18</div>
+        <div class="kpi-trend positive">All online</div>
+      </div>
+
+      <div class="bento-card kpi-card">
+        <div class="kpi-header">
+          <span class="kpi-label">System Health</span>
+        </div>
+        <div class="kpi-value">99.8%</div>
+        <div class="kpi-trend positive">Optimized</div>
+      </div>
+
+      <div class="bento-card span-2 main-chart-card">
+        <div class="card-header">
+          <h3>Biometric Monitoring</h3>
+          <span class="card-subtitle">Temperature vs Humidity Real-time</span>
+        </div>
+        <div class="chart-container">
+          <Line :data="biometricData" :options="biometricOptions" />
+        </div>
+      </div>
+
+      <div class="bento-card stability-card">
+        <div class="card-header">
+          <h3>Asset Stability</h3>
+          <span class="card-subtitle">Environmental Synthesis</span>
+        </div>
+        <div class="chart-container">
+          <Radar :data="stabilityData" :options="radarOptions" />
+        </div>
+      </div>
+
+      <div class="bento-card efficiency-card">
+        <div class="card-header">
+          <h3>Response Efficiency</h3>
+          <span class="card-subtitle">Alerts Answered by Operator</span>
+        </div>
+        <div class="chart-container">
+          <Bar :data="efficiencyData" :options="barOptions" />
+        </div>
+      </div>
+
+      <div class="bento-card business-card">
+        <div class="card-header">
+          <h3>Business Health</h3>
+          <span class="card-subtitle">Subscription Status</span>
+        </div>
+        <div class="doughnut-wrapper">
+          <div class="chart-container">
+            <Doughnut :data="businessData" :options="doughnutOptions" />
+          </div>
+          <div class="doughnut-center">
+            <span class="total-label">Total</span>
+            <span class="total-value">{{ db.subscriptions.length }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

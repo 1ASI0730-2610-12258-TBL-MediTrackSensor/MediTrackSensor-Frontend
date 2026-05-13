@@ -140,7 +140,7 @@ Tip: In development, it uses localhost:5000; in production, mockapi.io URLs for 
 - Routes are organized by bounded context under `/establishment`, `/monitoring`, etc.
 - Login selects user role and redirects to role-specific home.
 - Global `beforeEach` sets the document title from route metadata.
-- Base title: 'VITAL CARE'
+- Base title: `MediTrack Sensor`
 
 ## API and Data Notes
 - Uses multiple external APIs for different services (users, subscriptions, devices, etc.).

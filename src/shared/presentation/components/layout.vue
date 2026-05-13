@@ -45,7 +45,9 @@ const goToProfile = () => {
       <pv-toolbar class="app-toolbar">
         <template #start>
           <div class="toolbar-start">
-            <img src="/logo.png" alt="VITAL CARE" class="logo" />
+            <div class="toolbar-logo-wrap">
+              <img src="/logo.png" :alt="t('common.logoAlt')" class="logo" />
+            </div>
           </div>
         </template>
 
@@ -112,15 +114,26 @@ const goToProfile = () => {
   padding-left: 0.5rem;
 }
 
-.logo {
-  height: 38px;
-  width: auto;
-  object-fit: contain;
-  transition: transform 0.3s ease;
+.toolbar-logo-wrap {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.96);
+  border-radius: 12px;
+  padding: 6px 14px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.logo:hover {
+.toolbar-logo-wrap:hover {
   transform: scale(1.02);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+}
+
+.logo {
+  height: 52px;
+  width: auto;
+  max-width: min(320px, 42vw);
+  object-fit: contain;
+  display: block;
 }
 
 .main-nav {

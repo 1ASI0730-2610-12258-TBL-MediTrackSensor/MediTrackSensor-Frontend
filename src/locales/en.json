@@ -3,7 +3,11 @@
     "home": "Home"
   },
   "login": {
-    "selectUserType": "Select your user type"
+    "selectUserType": "Select your user type",
+    "brandMark": "◆ MEDITRACK SENSOR",
+    "brandTitle": "Clinical Operations with Unified Context",
+    "brandTagline": "Advanced monitoring and intelligent management for modern health organizations.",
+    "cardSubtitle": "Monitoring platform"
   },
   "establishment": {
     "establishments": "View Establishments",
@@ -107,6 +111,8 @@
     "plans": "Plans"
   },
   "common": {
+    "brandName": "MediTrack Sensor",
+    "logoAlt": "MediTrack Sensor",
     "welcome": "Welcome",
     "pageNotFound": "Page Not Found",
     "goHome": "Go Home",

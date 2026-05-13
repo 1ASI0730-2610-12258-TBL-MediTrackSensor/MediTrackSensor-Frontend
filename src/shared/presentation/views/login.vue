@@ -45,18 +45,18 @@ const selectRole = (roleId) => {
       </div>
       <div class="login-brand-overlay"></div>
       <div class="login-brand-content">
-        <span class="login-brand-mark">◆ MediTrack Sensor</span>
-        <p class="login-brand-title">Operaciones Clínicas con Contexto Unificado</p>
-        <p class="login-brand-tagline">Monitoreo avanzado y gestión inteligente para entidades de salud modernas.</p>
+        <span class="login-brand-mark">{{ t('login.brandMark') }}</span>
+        <p class="login-brand-title">{{ t('login.brandTitle') }}</p>
+        <p class="login-brand-tagline">{{ t('login.brandTagline') }}</p>
       </div>
     </div>
 
     <div class="login-panel">
       <div class="login-card">
         <header class="logo-section">
-          <img src="/logo.png" alt="MediTrack Logo" class="login-logo-main" />
-          <h1>MediTrack Sensor</h1>
-          <p class="logo-sub">Plataforma de monitoreo</p>
+          <img src="/logo.png" :alt="t('common.logoAlt')" class="login-logo-main" />
+          <h1>{{ t('common.brandName') }}</h1>
+          <p class="logo-sub">{{ t('login.cardSubtitle') }}</p>
         </header>
 
         <h2 class="form-title">{{ t('login.selectUserType') }}</h2>
@@ -201,10 +201,12 @@ const selectRole = (roleId) => {
 }
 
 .login-logo-main {
-  width: 100px;
+  width: min(160px, 55vw);
   height: auto;
+  max-height: 120px;
   margin: 0 auto 1.5rem;
   display: block;
+  object-fit: contain;
 }
 
 .logo-section {

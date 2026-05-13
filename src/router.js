@@ -43,7 +43,7 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from) => {
-    let baseTitle = 'VITAL CARE';
+    let baseTitle = 'MediTrack Sensor';
     document.title = `${baseTitle} - ${to.meta['title']}`;
 });
 

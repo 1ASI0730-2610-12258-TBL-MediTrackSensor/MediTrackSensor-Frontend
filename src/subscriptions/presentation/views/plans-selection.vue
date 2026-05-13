@@ -172,9 +172,8 @@ const selectPlan = (catalogId) => {
         @click="backToProfile"
       />
       <div class="plans-brand">
-        <img src="/logo.png" alt="" class="plans-logo" width="56" height="56" />
+        <img src="/logo.png" :alt="t('common.logoAlt')" class="plans-logo" height="72" />
         <div>
-          <p class="plans-brand-name">MediTrack Sensor</p>
           <h1 class="plans-title">{{ t('plansPage.title') }}</h1>
         </div>
       </div>
@@ -297,15 +296,10 @@ const selectPlan = (catalogId) => {
 }
 
 .plans-logo {
+  height: 72px;
+  width: auto;
+  max-width: min(280px, 90vw);
   object-fit: contain;
-}
-
-.plans-brand-name {
-  margin: 0;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #334155;
-  letter-spacing: -0.01em;
 }
 
 .plans-title {

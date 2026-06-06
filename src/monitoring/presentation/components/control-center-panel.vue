@@ -36,6 +36,14 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  embedded: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const { t, locale } = useI18n();
@@ -227,7 +235,12 @@ const stabilityData = computed(() => {
   ];
 
   return {
-    labels: ['Vibración', 'Presión', 'Partículas', 'Calidad aire'],
+    labels: [
+      t('monitoring.ccRadarVibration'),
+      t('monitoring.ccRadarPressure'),
+      t('monitoring.ccRadarParticles'),
+      t('monitoring.ccRadarAirQuality'),
+    ],
     datasets: [
       {
         label: t('monitoring.ccStability'),
@@ -393,21 +406,21 @@ const kpiCards = computed(() => [
 </script>
 
 <template>
-  <div v-if="db" class="control-panel">
-    <header class="panel-header">
-      <div class="header-info">
-        <h2 class="panel-title">{{ t('monitoring.ccTitle') }}</h2>
-        <p class="panel-subtitle">{{ t('monitoring.ccSubtitle') }}</p>
+  <div v-if="db" class="control-panel" :class="{ 'control-panel--embedded': embedded }">
+    <header class="panel-header est-flow-head est-flow-head--row control-panel__head">
+      <div class="est-flow-head__text header-info">
+        <h2 class="est-flow-title panel-title">{{ t('monitoring.ccTitle') }}</h2>
+        <p class="est-flow-subtitle panel-subtitle">{{ t('monitoring.ccSubtitle') }}</p>
         <p class="panel-meta">
           <i class="pi pi-clock" aria-hidden="true"></i>
           {{ t('monitoring.ccSync') }}: <strong>{{ lastSyncLabel }}</strong>
         </p>
       </div>
-      <div class="header-status">
-        <div class="status-badge">
-          <div class="pulse-indicator" aria-hidden="true"></div>
-          <span>{{ t('monitoring.ccOnline') }}</span>
-        </div>
+      <div class="est-flow-stats header-status">
+        <span class="est-flow-stat est-flow-stat--teal status-badge">
+          <span class="pulse-indicator" aria-hidden="true"></span>
+          <span class="est-flow-stat__value" style="font-size: 0.75rem; font-weight: 600">{{ t('monitoring.ccOnline') }}</span>
+        </span>
       </div>
     </header>
 
@@ -486,7 +499,7 @@ const kpiCards = computed(() => [
       </div>
     </div>
   </div>
-  <div v-else class="panel-loading">
+  <div v-else-if="loading || !db" class="panel-loading" :class="{ 'panel-loading--embedded': embedded }">
     <div class="loader-content">
       <i class="pi pi-spin pi-spinner" style="font-size: 2rem" aria-hidden="true"></i>
       <p>{{ t('monitoring.ccLoading') }}</p>
@@ -496,7 +509,16 @@ const kpiCards = computed(() => [
 
 <style scoped>
 .control-panel {
-  margin-top: 1rem;
+  margin-top: 0;
+}
+
+.control-panel--embedded .control-panel__head {
+  margin-bottom: 1.1rem;
+  padding-bottom: 1rem;
+}
+
+.control-panel--embedded .control-panel__head.est-flow-head--row {
+  border-bottom: 1px solid var(--mt-border);
 }
 
 .panel-header {
@@ -505,7 +527,7 @@ const kpiCards = computed(() => [
   align-items: flex-start;
   gap: 1rem;
   margin-bottom: 1rem;
-  padding: 0 0.25rem;
+  padding: 0;
 }
 
 .panel-title {
@@ -544,14 +566,10 @@ const kpiCards = computed(() => [
   align-items: center;
   gap: 0.5rem;
   padding: 0.4rem 0.85rem;
-  background: #fff;
-  border: 1px solid var(--mt-border, #e2e8f0);
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #475569;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
   flex-shrink: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .pulse-indicator {
@@ -848,15 +866,19 @@ const kpiCards = computed(() => [
 }
 
 .panel-loading {
-  background: #fff;
-  border: 1px solid var(--mt-border, #e2e8f0);
-  border-radius: 14px;
-  padding: 3rem 2rem;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 2.5rem 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  margin-top: 1rem;
+  margin-top: 0;
+}
+
+.panel-loading--embedded {
+  min-height: 12rem;
 }
 
 .loader-content {

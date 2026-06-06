@@ -18,17 +18,17 @@ import {
 import { Line, Radar, Bar, Doughnut } from 'vue-chartjs';
 
 ChartJS.register(
-  Title,
-  Tooltip,
-  Legend,
-  LineElement,
-  PointElement,
-  LinearScale,
-  CategoryScale,
-  Filler,
-  RadialLinearScale,
-  BarElement,
-  ArcElement
+    Title,
+    Tooltip,
+    Legend,
+    LineElement,
+    PointElement,
+    LinearScale,
+    CategoryScale,
+    Filler,
+    RadialLinearScale,
+    BarElement,
+    ArcElement
 );
 
 const { t } = useI18n();
@@ -165,9 +165,9 @@ const radarOptions = {
 // Chart 3: Response Efficiency (Bar)
 const efficiencyData = computed(() => {
   const sortedOperators = [...db.operators]
-    .sort((a, b) => b.alerts_answered - a.alerts_answered)
-    .slice(0, 5);
-  
+      .sort((a, b) => b.alerts_answered - a.alerts_answered)
+      .slice(0, 5);
+
   return {
     labels: sortedOperators.map(o => db.users.find(u => u.id === o.users_id)?.name),
     datasets: [{
@@ -203,7 +203,7 @@ const businessData = computed(() => {
   const active = db.subscriptions.filter(s => s.status === 'ACTIVE').length;
   const pending = db.subscriptions.filter(s => s.status === 'PENDING').length;
   const expired = db.subscriptions.filter(s => s.status === 'EXPIRED').length;
-  
+
   return {
     labels: ['Active', 'Pending', 'Expired'],
     datasets: [{
@@ -232,18 +232,18 @@ const doughnutOptions = {
       <div class="header-content">
         <h1 class="page-title">Operational Control Center</h1>
         <div class="header-filters">
-          <pv-select 
-            v-model="selectedEstablishment" 
-            :options="db.establishments" 
-            optionLabel="establishment_name" 
-            placeholder="Establishment ID" 
-            class="minimal-select"
+          <pv-select
+              v-model="selectedEstablishment"
+              :options="db.establishments"
+              optionLabel="establishment_name"
+              placeholder="Establishment ID"
+              class="minimal-select"
           />
-          <pv-select 
-            v-model="selectedRegion" 
-            :options="regions" 
-            placeholder="Region / City" 
-            class="minimal-select"
+          <pv-select
+              v-model="selectedRegion"
+              :options="regions"
+              placeholder="Region / City"
+              class="minimal-select"
           />
         </div>
       </div>

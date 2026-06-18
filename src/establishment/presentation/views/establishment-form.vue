@@ -1,11 +1,17 @@
 <script setup>
 import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
-import { fetchDashboardData, createEstablishment } from '../../../shared/infrastructure/services/dashboard.service.js';
+import useEstablishmentStore from '../../application/establishment.store.js';
+import useIamStore from '../../../iam/application/iam.store.js';
+import { readAuthSession } from '../../../iam/infrastructure/auth-session.js';
 
 const { t } = useI18n();
+const router = useRouter();
 const toast = useToast();
+const establishmentStore = useEstablishmentStore();
+const iamStore = useIamStore();
 const establishments = ref([]);
 const isLoading = ref(true);
 const isSaving = ref(false);
@@ -15,70 +21,87 @@ const newEstablishment = ref({
   establishment_type: 'HOSPITAL',
   city_region: '',
   district: '',
-  address: ''
+  address: '',
 });
 
 const loadData = async () => {
   isLoading.value = true;
   try {
-    const data = await fetchDashboardData();
-    establishments.value = data.establishments;
+    establishments.value = await establishmentStore.fetchEstablishmentsAsync();
   } catch (error) {
-    console.error("Error loading establishments", error);
+    console.error('Error loading establishments', error);
   } finally {
     isLoading.value = false;
   }
 };
 
+const goBack = () => {
+  router.push({ name: 'home-health-entity' });
+};
+
 const handleSave = async () => {
   if (isSaving.value) return;
-  
+
   isSaving.value = true;
   try {
-    // Auto-generate fields
     const nameSlug = newEstablishment.value.establishment_name.toLowerCase().replace(/[^a-z0-9]/g, '');
     const randomPhone = Math.floor(900000000 + Math.random() * 99999999).toString();
-    const now = new Date();
-    
+
+    // Resolve admin_id from session
+    const session = readAuthSession();
+    await iamStore.fetchAdminsAsync();
+    const admin = iamStore.admins.find(
+      (a) => Number(a.user_id ?? a.users_id) === Number(session?.userId)
+    ) || iamStore.admins[0];
+    const adminId = admin?.id ?? null;
+
+    if (!adminId) {
+      toast.add({ severity: 'error', summary: 'No se encontró el perfil de administrador.', life: 4000 });
+      isSaving.value = false;
+      return;
+    }
+
+    // Map enum to PascalCase (backend uses JsonStringEnumConverter)
+    const typeMap = { HOSPITAL: 'Hospital', WAREHOUSE: 'Warehouse', CLINIC: 'Clinic', PHARMACY: 'Pharmacy', LABORATORY: 'Laboratory' };
+    const backendType = typeMap[newEstablishment.value.establishment_type] ?? newEstablishment.value.establishment_type;
+
     const payload = {
-      ...newEstablishment.value,
-      lat: (-12.04 + (Math.random() - 0.5) * 0.5).toFixed(6),
-      lng: (-77.03 + (Math.random() - 0.5) * 0.5).toFixed(6),
+      establishment_name: newEstablishment.value.establishment_name,
+      establishment_type: backendType,
+      address: newEstablishment.value.address,
+      district: newEstablishment.value.district,
+      city_region: newEstablishment.value.city_region,
+      country: 'Perú',
+      latitude: parseFloat((-12.04 + (Math.random() - 0.5) * 0.5).toFixed(6)),
+      longitude: parseFloat((-77.03 + (Math.random() - 0.5) * 0.5).toFixed(6)),
       website: `www.${nameSlug}.com`,
       email: `${nameSlug}@gmail.com`,
       phone: randomPhone,
-      created_at: now.toLocaleString('es-PE', { 
-        year: 'numeric', month: '2-digit', day: '2-digit', 
-        hour: '2-digit', minute: '2-digit', second: '2-digit' 
-      })
+      admin_id: adminId,
     };
 
-    await createEstablishment(payload);
-    
+    await establishmentStore.createEstablishmentAsync(payload);
+
     toast.add({
       severity: 'success',
-      summary: 'Éxito',
-      detail: 'Establecimiento registrado con datos automáticos',
-      life: 3000
+      summary: t('establishment.registerSuccess'),
+      life: 3000,
     });
-    
-    // Limpiar formulario
+
     newEstablishment.value = {
       establishment_name: '',
       establishment_type: 'HOSPITAL',
       city_region: '',
       district: '',
-      address: ''
+      address: '',
     };
-    
-    // Refrescar tabla
+
     await loadData();
   } catch (error) {
     toast.add({
       severity: 'error',
-      summary: 'Error',
-      detail: 'No se pudo registrar el establecimiento',
-      life: 5000
+      summary: t('establishment.registerError'),
+      life: 5000,
     });
   } finally {
     isSaving.value = false;
@@ -91,96 +114,118 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="add-establishment-container">
+  <div class="est-page">
     <pv-toast />
-    
-    <!-- Header Section -->
-    <header class="page-header">
-      <h1 class="page-title">{{ t('establishment.addEstablishment') }}</h1>
-      <p class="page-subtitle">Registra nuevos centros operativos en la red de MediTrack.</p>
-    </header>
 
-    <div class="content-grid">
-      <!-- Form Section -->
-      <section class="form-section card">
-        <div class="card-header">
-          <i class="pi pi-plus-circle"></i>
-          <h3>Nuevo Establecimiento</h3>
+    <nav class="est-back-bar" aria-label="Navegación">
+      <button type="button" class="est-back-btn" @click="goBack">
+        <i class="pi pi-arrow-left" aria-hidden="true"></i>
+        <span>{{ t('establishment.backToHome') }}</span>
+      </button>
+    </nav>
+
+    <div class="est-card">
+      <header class="est-head">
+        <h1 class="est-title">{{ t('establishment.addEstablishment') }}</h1>
+        <p class="est-subtitle">{{ t('establishment.addPageSubtitle') }}</p>
+      </header>
+
+      <section class="est-section">
+        <div class="est-section__head">
+          <i class="pi pi-plus-circle" aria-hidden="true"></i>
+          <h2>{{ t('establishment.newEstablishmentTitle') }}</h2>
         </div>
-        
-        <form @submit.prevent="handleSave" class="establishment-form">
-          <div class="form-grid">
-            <div class="form-field">
-              <label>Nombre del Establecimiento</label>
-              <input v-model="newEstablishment.establishment_name" type="text" placeholder="Ej. Hospital Central Norte" required />
-            </div>
-            <div class="form-field">
-              <label>Tipo</label>
+
+        <form class="est-form" @submit.prevent="handleSave">
+          <div class="est-form-grid">
+            <label class="est-field">
+              <span class="est-field__label">{{ t('establishment.fieldName') }}</span>
+              <input
+                v-model="newEstablishment.establishment_name"
+                type="text"
+                :placeholder="t('establishment.placeholderName')"
+                required
+              />
+            </label>
+            <label class="est-field">
+              <span class="est-field__label">{{ t('establishment.fieldType') }}</span>
               <select v-model="newEstablishment.establishment_type">
-                <option value="HOSPITAL">Hospital</option>
-                <option value="WAREHOUSE">Almacén</option>
-                <option value="CLINIC">Clínica</option>
+                <option value="HOSPITAL">{{ t('establishment.typeHospital') }}</option>
+                <option value="WAREHOUSE">{{ t('establishment.typeWarehouse') }}</option>
+                <option value="CLINIC">{{ t('establishment.typeClinic') }}</option>
               </select>
-            </div>
-            <div class="form-field">
-              <label>Región / Ciudad</label>
-              <input v-model="newEstablishment.city_region" type="text" placeholder="Ej. Lima" required />
-            </div>
-            <div class="form-field">
-              <label>Distrito</label>
-              <input v-model="newEstablishment.district" type="text" placeholder="Ej. San Isidro" />
-            </div>
-            <div class="form-field full-width">
-              <label>Dirección Exacta</label>
-              <input v-model="newEstablishment.address" type="text" placeholder="Ej. Av. Las Flores 456" />
-            </div>
+            </label>
+            <label class="est-field">
+              <span class="est-field__label">{{ t('establishment.fieldCity') }}</span>
+              <input
+                v-model="newEstablishment.city_region"
+                type="text"
+                :placeholder="t('establishment.placeholderCity')"
+                required
+              />
+            </label>
+            <label class="est-field">
+              <span class="est-field__label">{{ t('establishment.fieldDistrict') }}</span>
+              <input
+                v-model="newEstablishment.district"
+                type="text"
+                :placeholder="t('establishment.placeholderDistrict')"
+              />
+            </label>
+            <label class="est-field est-field--full">
+              <span class="est-field__label">{{ t('establishment.fieldAddress') }}</span>
+              <input
+                v-model="newEstablishment.address"
+                type="text"
+                :placeholder="t('establishment.placeholderAddress')"
+              />
+            </label>
           </div>
-          
-          <div class="form-actions">
-            <button type="submit" class="btn-primary" :disabled="isSaving">
-              <i :class="isSaving ? 'pi pi-spin pi-spinner' : 'pi pi-check'"></i>
-              {{ isSaving ? 'Guardando...' : 'Registrar Establecimiento' }}
+
+          <div class="est-form-actions">
+            <button type="submit" class="est-btn est-btn--primary" :disabled="isSaving">
+              <i :class="isSaving ? 'pi pi-spin pi-spinner' : 'pi pi-check'" aria-hidden="true"></i>
+              <span>{{ isSaving ? t('establishment.saving') : t('establishment.registerSubmit') }}</span>
             </button>
           </div>
         </form>
       </section>
 
-      <!-- Preview Table Section -->
-      <section class="table-section card">
-        <div class="card-header">
-          <i class="pi pi-database"></i>
-          <h3>Registros en Fake API (Vista Previa)</h3>
+      <section class="est-section est-section--table">
+        <div class="est-section__head">
+          <i class="pi pi-database" aria-hidden="true"></i>
+          <h2>{{ t('establishment.registeredList') }}</h2>
         </div>
 
-        <div v-if="isLoading" class="loader">
-          <i class="pi pi-spin pi-spinner"></i>
-          <span>Consultando MockAPI...</span>
+        <div v-if="isLoading" class="est-loader">
+          <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+          <span>{{ t('establishment.loadingList') }}</span>
         </div>
 
-        <div v-else class="table-responsive">
-          <table class="data-table">
+        <div v-else class="est-table-wrap">
+          <table class="est-table">
             <thead>
               <tr>
-                <th>ID</th>
-                <th>Establecimiento</th>
-                <th>Contacto Digital</th>
-                <th>Teléfono</th>
-                <th>Creado el</th>
+                <th>{{ t('establishment.fieldId') }}</th>
+                <th>{{ t('establishment.colEstablishment') }}</th>
+                <th>{{ t('establishment.colDigitalContact') }}</th>
+                <th>{{ t('establishment.fieldPhone') }}</th>
+                <th>{{ t('establishment.colCreatedAt') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="est in establishments" :key="est.id">
-                <td>#{{ est.id }}</td>
+                <td class="est-table__id">#{{ est.id }}</td>
                 <td>
-                  <div class="font-bold">{{ est.establishment_name }}</div>
-                  <div class="text-sm text-gray">{{ est.city_region }}, {{ est.district }}</div>
+                  <div class="est-table__name">{{ est.establishment_name }}</div>
+                  <div class="est-table__meta">{{ est.city_region }}, {{ est.district }}</div>
                 </td>
                 <td>
-                  <div class="text-blue">{{ est.website }}</div>
-                  <div class="text-xs text-muted">{{ est.email }}</div>
+                  <div class="est-table__link">{{ est.website }}</div>
+                  <div class="est-table__meta">{{ est.email }}</div>
                 </td>
-                <td>{{ est.phone || '9********' }}</td>
-                <td>{{ est.created_at || 'Recién creado' }}</td>
+                <td>{{ est.phone || '—' }}</td>
+                <td>{{ est.created_at || '—' }}</td>
               </tr>
             </tbody>
           </table>
@@ -191,200 +236,293 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.add-establishment-container {
+.est-page {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
-  animation: fadeIn 0.5s ease-out;
+  gap: 0.75rem;
+  padding-bottom: 1.5rem;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.est-back-bar {
+  background: #fff;
+  border: 1px solid var(--mt-border);
+  border-radius: 14px;
+  padding: 0.55rem 0.75rem;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
 }
 
-.page-header {
-  margin-bottom: 1rem;
+.est-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  background: transparent;
+  color: var(--mt-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
-.page-title {
-  font-size: 2.25rem;
+.est-back-btn:hover {
+  background: var(--mt-primary-soft);
+  color: var(--mt-primary-hover);
+}
+
+.est-back-btn i {
+  font-size: 0.8rem;
+}
+
+.est-card {
+  background: #fff;
+  border-radius: 22px;
+  border: 1px solid var(--mt-border);
+  box-shadow: 0 10px 36px rgba(15, 23, 42, 0.07);
+  padding: 1.65rem 1.75rem 1.5rem;
+}
+
+.est-head {
+  text-align: center;
+  margin-bottom: 1.35rem;
+  padding-bottom: 1.1rem;
+  border-bottom: 1px solid var(--mt-border);
+}
+
+.est-title {
+  margin: 0;
+  font-size: clamp(1.25rem, 2.5vw, 1.65rem);
   font-weight: 800;
   color: var(--mt-heading);
-  margin: 0;
   letter-spacing: -0.03em;
 }
 
-.page-subtitle {
+.est-subtitle {
+  margin: 0.45rem 0 0;
+  font-size: 0.875rem;
   color: var(--mt-text-muted);
-  margin-top: 0.5rem;
+  line-height: 1.45;
 }
 
-.content-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
+.est-section {
+  padding: 1.15rem 0;
+  border-bottom: 1px solid var(--mt-border);
 }
 
-.card {
-  background: white;
-  border: 1px solid var(--mt-border);
-  border-radius: var(--mt-radius-lg);
-  padding: 2rem;
-  box-shadow: var(--mt-shadow-sm);
+.est-section--table {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
-.card-header {
+.est-section__head {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
   color: var(--mt-primary);
 }
 
-.card-header h3 {
+.est-section__head i {
+  font-size: 1rem;
+}
+
+.est-section__head h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--mt-heading);
 }
 
-.establishment-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.form-grid {
+.est-form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
-.form-field {
+.est-field {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.3rem;
+  min-width: 0;
 }
 
-.form-field.full-width {
-  grid-column: span 2;
+.est-field--full {
+  grid-column: 1 / -1;
 }
 
-.form-field label {
-  font-size: 0.9rem;
+.est-field__label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mt-text-muted);
+}
+
+.est-field input,
+.est-field select {
+  width: 100%;
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--mt-border);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--mt-heading);
+  background: #fff;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.est-field input::placeholder {
+  color: #94a3b8;
+}
+
+.est-field input:focus,
+.est-field select:focus {
+  outline: none;
+  border-color: var(--mt-primary);
+  box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.1);
+}
+
+.est-field select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem;
+  padding-right: 2.25rem;
+}
+
+.est-form-actions {
+  margin-top: 1rem;
+}
+
+.est-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.est-btn--primary {
+  background: linear-gradient(180deg, #2563eb, var(--mt-primary));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(30, 58, 138, 0.22);
+}
+
+.est-btn--primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.28);
+}
+
+.est-btn--primary:disabled {
+  background: #cbd5e1;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.est-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--mt-border);
+  border-radius: 12px;
+}
+
+.est-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+.est-table th {
+  text-align: left;
+  padding: 0.65rem 0.85rem;
+  background: #f8fafc;
+  color: var(--mt-text-muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--mt-border);
+}
+
+.est-table td {
+  padding: 0.75rem 0.85rem;
+  border-bottom: 1px solid var(--mt-border);
+  font-size: 0.8125rem;
+  color: var(--mt-heading);
+  vertical-align: top;
+}
+
+.est-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.est-table__id {
+  font-weight: 700;
+  color: var(--mt-primary);
+}
+
+.est-table__name {
   font-weight: 600;
   color: var(--mt-heading);
 }
 
-.form-field input, .form-field select {
-  padding: 0.85rem 1.25rem;
-  background-color: #ffffff;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  color: #1e293b;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  width: 100%;
-}
-
-.form-field input::placeholder {
-  color: #94a3b8;
-  font-weight: 400;
-}
-
-.form-field input:focus, .form-field select:focus {
-  outline: none;
-  border-color: var(--mt-primary);
-  background-color: #fff;
-  box-shadow: 0 0 0 4px var(--mt-primary-soft), 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-  transform: translateY(-1px);
-}
-
-.form-field select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 1rem center;
-  background-size: 1.25rem;
-  padding-right: 3rem;
-}
-
-.btn-primary {
-  background: var(--mt-primary);
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: var(--mt-radius);
-  font-weight: 700;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  transition: all 0.2s ease;
-}
-
-.btn-primary:disabled {
-  background: #cbd5e1;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.data-table th {
-  text-align: left;
-  padding: 1rem;
-  background: #f8fafc;
+.est-table__meta {
+  font-size: 0.72rem;
   color: var(--mt-text-muted);
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-transform: uppercase;
+  margin-top: 0.15rem;
 }
 
-.data-table td {
-  padding: 1.25rem 1rem;
-  border-bottom: 1px solid var(--mt-border);
-  font-size: 0.95rem;
+.est-table__link {
+  color: var(--mt-primary);
+  font-weight: 600;
+  font-size: 0.78rem;
 }
 
-.font-bold { font-weight: 700; }
-.text-sm { font-size: 0.85rem; }
-.text-xs { font-size: 0.75rem; }
-.text-blue { color: #3b82f6; font-weight: 600; }
-.text-gray { color: #64748b; }
-.text-muted { color: #94a3b8; }
-
-.status-pill {
-  padding: 0.25rem 0.75rem;
-  border-radius: 100px;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.status-pill.active {
-  background: #ecfdf5;
-  color: #10b981;
-}
-
-.loader {
+.est-loader {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 3rem;
+  gap: 0.65rem;
+  padding: 2rem;
   color: var(--mt-text-muted);
-  gap: 1rem;
+  font-size: 0.875rem;
 }
 
-.loader i {
-  font-size: 2rem;
+.est-loader i {
+  font-size: 1.5rem;
 }
 
 @media (max-width: 768px) {
-  .form-grid { grid-template-columns: 1fr; }
-  .form-field.full-width { grid-column: span 1; }
+  .est-card {
+    padding: 1.25rem 1rem;
+    border-radius: 18px;
+  }
+
+  .est-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .est-field--full {
+    grid-column: auto;
+  }
+
+  .est-btn--primary {
+    width: 100%;
+  }
 }
 </style>

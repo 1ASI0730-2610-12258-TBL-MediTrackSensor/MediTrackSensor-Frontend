@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { fetchDashboardData } from '../../../shared/infrastructure/services/dashboard.service.js';
+import { fetchDashboardPayload } from '../../../shared/infrastructure/dashboard-payload.js';
 
 const route = useRoute();
 const router = useRouter();
@@ -22,16 +22,15 @@ async function load() {
   const eid = route.params.establishmentId;
   const oid = route.params.operatorId;
   try {
-    const data = await fetchDashboardData();
+    const data = await fetchDashboardPayload();
     establishment.value = data.establishments.find((e) => sameEst(e.id, eid)) ?? null;
     const ops = data.operators || [];
     const allUsers = [...(data.users || []), ...(data.admins || [])];
-    operator.value = ops.find((o) => String(o.id) === String(oid) && sameEst(o.establishment_id, eid)) ?? null;
-    if (operator.value) {
-      user.value = allUsers.find((u) => u.id === operator.value.users_id) ?? null;
-    } else {
-      user.value = null;
-    }
+    operator.value =
+      ops.find((o) => String(o.id) === String(oid) && sameEst(o.establishment_id, eid)) ?? null;
+    user.value = operator.value
+      ? (allUsers.find((u) => u.id === operator.value.users_id) ?? null)
+      : null;
   } catch (e) {
     console.error(e);
     operator.value = null;
@@ -69,8 +68,9 @@ const scheduleRows = computed(() => {
 
 const entryDate = computed(() => {
   const op = operator.value;
-  if (!op) return '—';
-  const raw = op.entry_date ?? op.entryDate ?? op.createdAt ?? op.created_at;
+  const u = user.value;
+  if (!op && !u) return '—';
+  const raw = op?.entry_date ?? u?.entry_date ?? op?.createdAt ?? op?.created_at;
   if (!raw) return '—';
   const d = new Date(raw);
   return Number.isNaN(d.getTime()) ? String(raw) : d.toLocaleDateString();
@@ -85,46 +85,63 @@ function goTeam() {
 
 const heroName = computed(() => user.value?.name || t('establishment.unknownUser'));
 const heroEmail = computed(() => user.value?.email || '—');
-const avatarLetter = computed(() => {
+const userInitial = computed(() => {
   const n = user.value?.name;
-  return n && n.length ? n.charAt(0) : '?';
+  return n && n.length ? n.charAt(0).toUpperCase() : '?';
 });
-const photoUrl = computed(() => user.value?.photo || user.value?.photo_url || user.value?.avatar || null);
+const photoUrl = computed(
+  () => user.value?.photo || user.value?.photo_url || user.value?.avatar || null,
+);
 </script>
 
 <template>
-  <div class="op-detail">
-    <header class="toolbar">
-      <pv-button
-        icon="pi pi-arrow-left"
-        class="p-button-text p-button-sm"
-        :aria-label="t('establishment.back')"
-        @click="goTeam"
-      />
-    </header>
+  <div class="est-flow-page">
+    <nav class="est-flow-back-bar" aria-label="Navegación">
+      <button type="button" class="est-flow-back-btn" @click="goTeam">
+        <i class="pi pi-arrow-left" aria-hidden="true"></i>
+        <span>{{ t('establishment.backToTeam') }}</span>
+      </button>
+    </nav>
 
-    <div v-if="loading" class="state">
-      <i class="pi pi-spin pi-spinner" />
+    <div v-if="loading" class="est-flow-card est-flow-state">
+      <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
       <span>{{ t('establishment.detailLoading') }}</span>
     </div>
 
-    <div v-else-if="!operator" class="state warn">
+    <div v-else-if="!operator" class="est-flow-card est-flow-state est-flow-state--warn">
       <p>{{ t('establishment.operatorNotFound') }}</p>
-      <pv-button :label="t('establishment.back')" class="p-button-sm" @click="goTeam" />
+      <button type="button" class="est-flow-btn est-flow-btn--ghost" @click="goTeam">
+        {{ t('establishment.back') }}
+      </button>
     </div>
 
-    <template v-else>
-      <div class="hero">
-        <div class="avatar-wrap">
-          <img v-if="photoUrl" :src="photoUrl" alt="" class="avatar-img" />
-          <div v-else class="avatar-fallback">{{ avatarLetter }}</div>
+    <div v-else class="est-flow-card">
+      <header class="est-flow-head">
+        <h1 class="est-flow-title">{{ t('establishment.operatorInfo') }}</h1>
+      </header>
+
+      <div class="est-flow-hero">
+        <div class="est-flow-hero__identity">
+          <img
+            v-if="photoUrl"
+            :src="photoUrl"
+            alt=""
+            class="profile-avatar--img"
+            width="64"
+            height="64"
+            style="border-radius: 50%; object-fit: cover"
+          />
+          <span
+            v-else
+            class="mt-user-avatar mt-user-avatar--round mt-user-avatar--lg"
+          >{{ userInitial }}</span>
+          <div>
+            <h2 class="est-flow-hero__name">{{ heroName }}</h2>
+            <p class="est-flow-hero__email">{{ heroEmail }}</p>
+          </div>
         </div>
-        <div class="hero-text">
-          <h1>{{ heroName }}</h1>
-          <p class="email">{{ heroEmail }}</p>
-        </div>
-        <div class="schedule">
-          <h3>{{ t('profileView.scheduleTitle') }}</h3>
+        <aside class="est-flow-schedule" aria-label="schedule">
+          <h3 class="est-flow-schedule__title">{{ t('profileView.scheduleTitle') }}</h3>
           <table>
             <thead>
               <tr>
@@ -139,192 +156,50 @@ const photoUrl = computed(() => user.value?.photo || user.value?.photo_url || us
               </tr>
             </tbody>
           </table>
+        </aside>
+      </div>
+
+      <div class="est-flow-fields">
+        <div class="est-flow-field">
+          <span class="est-flow-field__label">{{ t('establishment.fieldOpName') }}</span>
+          <span class="est-flow-field__value">{{ user?.name || '—' }}</span>
+        </div>
+        <div class="est-flow-field">
+          <span class="est-flow-field__label">{{ t('establishment.fieldAssignedEst') }}</span>
+          <span class="est-flow-field__value">{{ establishment?.establishment_name || '—' }}</span>
+        </div>
+        <div class="est-flow-field">
+          <span class="est-flow-field__label">{{ t('establishment.fieldDni') }}</span>
+          <span class="est-flow-field__value">{{ user?.dni || user?.document || '—' }}</span>
+        </div>
+        <div class="est-flow-field">
+          <span class="est-flow-field__label">{{ t('establishment.fieldEntryDate') }}</span>
+          <span class="est-flow-field__value">{{ entryDate }}</span>
+        </div>
+        <div class="est-flow-field">
+          <span class="est-flow-field__label">{{ t('establishment.fieldEmail') }}</span>
+          <span class="est-flow-field__value">{{ user?.email || '—' }}</span>
+        </div>
+        <div class="est-flow-field">
+          <span class="est-flow-field__label">{{ t('establishment.fieldAlertsAnswered') }}</span>
+          <span class="est-flow-field__value">{{ operator.alerts_answered ?? 0 }}</span>
+        </div>
+        <div class="est-flow-field">
+          <span class="est-flow-field__label">{{ t('establishment.fieldPhone') }}</span>
+          <span class="est-flow-field__value">{{ user?.phone || '—' }}</span>
+        </div>
+        <div class="est-flow-field">
+          <span class="est-flow-field__label">{{ t('establishment.fieldJobTitle') }}</span>
+          <span class="est-flow-field__value">{{ user?.job_title || user?.jobTitle || '—' }}</span>
         </div>
       </div>
 
-      <div class="grid">
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldOpName') }}</span>
-          <span class="val">{{ user?.name || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldAssignedEst') }}</span>
-          <span class="val">{{ establishment?.establishment_name || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldDni') }}</span>
-          <span class="val">{{ user?.dni || user?.document || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldEntryDate') }}</span>
-          <span class="val">{{ entryDate }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldEmail') }}</span>
-          <span class="val">{{ user?.email || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldAlertsAnswered') }}</span>
-          <span class="val">{{ operator.alerts_answered ?? 0 }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldPhone') }}</span>
-          <span class="val">{{ user?.phone || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldJobTitle') }}</span>
-          <span class="val">{{ user?.job_title || user?.jobTitle || '—' }}</span>
-        </div>
-      </div>
-    </template>
+      <footer class="est-flow-actions">
+        <button type="button" class="est-flow-btn est-flow-btn--ghost" @click="goTeam">
+          <i class="pi pi-arrow-left" aria-hidden="true"></i>
+          <span>{{ t('establishment.back') }}</span>
+        </button>
+      </footer>
+    </div>
   </div>
 </template>
-
-<style scoped>
-.op-detail {
-  max-width: 920px;
-  margin: 0 auto;
-  padding: 1.25rem 1.5rem 2rem;
-  animation: fade 0.35s ease;
-}
-@keyframes fade {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.toolbar {
-  margin-bottom: 0.75rem;
-}
-.hero {
-  display: grid;
-  grid-template-columns: auto 1fr minmax(0, 260px);
-  gap: 1rem;
-  align-items: start;
-  margin-bottom: 1.25rem;
-}
-@media (max-width: 800px) {
-  .hero {
-    grid-template-columns: 1fr;
-  }
-}
-.avatar-wrap {
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid #e2e8f0;
-  flex-shrink: 0;
-}
-.avatar-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.avatar-fallback {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1e3a5f;
-  color: #fff;
-  font-weight: 800;
-  font-size: 1.35rem;
-}
-.hero-text h1 {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: #0f172a;
-}
-.email {
-  margin: 0.2rem 0 0;
-  font-size: 0.85rem;
-  color: #ea580c;
-  font-weight: 600;
-}
-.schedule {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0.5rem 0.65rem;
-}
-.schedule h3 {
-  margin: 0 0 0.4rem;
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: #1e3a5f;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.78rem;
-}
-th,
-td {
-  text-align: left;
-  padding: 0.3rem 0.35rem;
-  border-bottom: 1px solid #f1f5f9;
-}
-th {
-  color: #64748b;
-  font-weight: 700;
-  text-transform: uppercase;
-  font-size: 0.62rem;
-}
-td:last-child {
-  color: #c2410c;
-  font-weight: 600;
-}
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem 1rem;
-}
-.field {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0.55rem 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.lab {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.val {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #ea580c;
-  word-break: break-word;
-}
-.state {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  color: #64748b;
-  font-size: 0.9rem;
-  padding: 2rem 0;
-}
-.state.warn {
-  flex-direction: column;
-  align-items: flex-start;
-}
-@media (max-width: 640px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-}
-</style>

@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Layout from "./shared/presentation/components/layout.vue";
-import Login from "./shared/presentation/views/login.vue";
+import Login from "./iam/presentation/views/login.vue";
 import Home from "./shared/presentation/views/home.vue";
 import HomeHealthEntity from "./shared/presentation/views/home-health-entity.vue";
 import HomeOperationalStaff from "./shared/presentation/views/home-operational-staff.vue";
@@ -9,8 +9,10 @@ import monitoringRoutes from "./monitoring/presentation/monitoring-routes.js";
 import logisticsRoutes from "./logistics/presentation/logistics-routes.js";
 import subscriptionsRoutes from "./subscriptions/presentation/subscriptions-routes.js";
 import iamRoutes from "./iam/presentation/iam-routes.js";
+import iamAuthRoutes from "./iam/presentation/iam-auth-routes.js";
 
 const pageNotFound = () => import('./shared/presentation/views/page-not-found.vue');
+const iamAuthLayout = () => import('./iam/presentation/views/auth-layout.vue');
 
 const routes = [
     {
@@ -18,6 +20,12 @@ const routes = [
         name: 'login',
         component: Login,
         meta: { title: 'Login', requiresAuth: false }
+    },
+    {
+        path: '/iam/auth',
+        component: iamAuthLayout,
+        children: iamAuthRoutes,
+        meta: { requiresAuth: false }
     },
     {
         path: '/',

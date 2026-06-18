@@ -1,23 +1,36 @@
 <script setup>
-import {useI18n} from "vue-i18n";
-const { locale, availableLocales } = useI18n();
+import { useI18n } from 'vue-i18n';
 
+defineProps({
+  compact: { type: Boolean, default: false },
+});
+
+const { locale, availableLocales } = useI18n();
 </script>
 
 <template>
-  <div class="language-switcher-shell">
-    <div class="language-switcher-icon" aria-hidden="true">
+  <div class="language-switcher-shell" :class="{ 'language-switcher-shell--compact': compact }">
+    <div
+      class="language-switcher-icon"
+      :class="{ 'language-switcher-icon--inline': compact }"
+      aria-hidden="true"
+    >
       <i class="pi pi-globe"></i>
     </div>
-    <pv-select-button
-        v-model="locale"
-        :options="availableLocales"
-        class="language-select"
-    >
-      <template #option="slotProps">
-        <span class="language-option">{{ slotProps.option.toUpperCase() }}</span>
-      </template>
-    </pv-select-button>
+
+    <div class="language-options">
+      <button
+        v-for="loc in availableLocales"
+        :key="loc"
+        type="button"
+        class="lang-btn"
+        :aria-pressed="locale === loc"
+        :class="{ checked: locale === loc }"
+        @click="locale = loc"
+      >
+        {{ loc.toUpperCase() }}
+      </button>
+    </div>
   </div>
 </template>
 
@@ -29,9 +42,32 @@ const { locale, availableLocales } = useI18n();
   padding: 0.65rem 0.75rem 0.75rem;
   background: white;
   border-radius: 16px;
-  box-shadow:
-      0 4px 15px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
   border: 1px solid var(--mt-border);
+}
+
+.language-switcher-shell--compact {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.language-switcher-shell--compact::before {
+  content: '';
+  display: none;
+}
+
+.language-switcher-shell--compact .language-options {
+  gap: 0.25rem;
+}
+
+.language-switcher-shell--compact .lang-btn {
+  min-width: 2rem;
+  height: 2rem;
+  font-size: 0.72rem;
 }
 
 .language-switcher-icon {
@@ -43,38 +79,31 @@ const { locale, availableLocales } = useI18n();
   margin-bottom: 0.15rem;
 }
 
-.language-option {
-  font-weight: 700;
-  font-size: 0.75rem;
+.language-switcher-icon--inline {
+  margin-bottom: 0;
+  font-size: 0.95rem;
 }
 
-:deep(.language-select.p-selectbutton) {
+.language-options {
   display: flex;
   gap: 0.35rem;
-  background: transparent;
-  border: none;
 }
 
-:deep(.language-select .p-togglebutton) {
+.lang-btn {
   border-radius: 10px;
   min-width: 2.25rem;
   height: 2.25rem;
   border: 1px solid var(--mt-border);
   background: #f8fafc;
   color: var(--mt-text-muted);
-  transition: all 0.2s ease;
-  padding: 0;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-:deep(.language-select .p-togglebutton.p-togglebutton-checked) {
+.lang-btn.checked {
   background: #0f172a;
-  border-color: transparent;
   color: #fff;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-:deep(.language-select .p-togglebutton:not(.p-togglebutton-checked):hover) {
-  background: #f1f5f9;
-  border-color: var(--mt-primary);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.18);
+  border-color: transparent;
 }
 </style>

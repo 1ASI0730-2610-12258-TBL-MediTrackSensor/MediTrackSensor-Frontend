@@ -1,228 +1,180 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-import { fetchDashboardData } from '../../../shared/infrastructure/services/dashboard.service.js';
+import useEstablishmentStore from '../../application/establishment.store.js';
 
-const route = useRoute();
+const establishmentStore = useEstablishmentStore();
 const router = useRouter();
 const { t } = useI18n();
 
-const loading = ref(true);
-const establishment = ref(null);
-const operatorsCount = ref(0);
-const devicesCount = ref(0);
+const establishments = ref([]);
+const isLoading = ref(true);
+const searchQuery = ref('');
 
-function sameEst(a, b) {
-  return Number(a) === Number(b) || String(a) === String(b);
-}
-
-async function load() {
-  loading.value = true;
-  const eid = route.params.establishmentId;
+const loadData = async () => {
+  isLoading.value = true;
   try {
-    const data = await fetchDashboardData();
-    establishment.value = data.establishments.find((e) => sameEst(e.id, eid)) ?? null;
-    operatorsCount.value = (data.operators || []).filter((op) => sameEst(op.establishment_id, eid)).length;
-    devicesCount.value = (data.devices || []).filter((d) => sameEst(d.establishment_id, eid)).length;
-  } catch (e) {
-    console.error(e);
-    establishment.value = null;
+    establishments.value = await establishmentStore.fetchEstablishmentsAsync();
+  } catch (error) {
+    console.error('Failed to load establishments', error);
   } finally {
-    loading.value = false;
+    isLoading.value = false;
   }
-}
+};
 
-onMounted(load);
-watch(() => route.params.establishmentId, load);
-
-const displayType = computed(() => {
-  const raw = establishment.value?.establishment_type;
-  if (!raw) return '—';
-  return String(raw).replace(/_/g, ' ');
+const filteredEst = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return establishments.value;
+  return establishments.value.filter(
+    (e) =>
+      (e.establishment_name || '').toLowerCase().includes(q) ||
+      (e.city_region || '').toLowerCase().includes(q) ||
+      (e.district || '').toLowerCase().includes(q),
+  );
 });
 
-function goList() {
-  router.push({ name: 'establishments' });
+const stats = computed(() => {
+  const total = establishments.value.length;
+  const hospitals = establishments.value.filter(
+    (e) => e.establishment_type?.toUpperCase() === 'HOSPITAL',
+  ).length;
+  const warehouses = establishments.value.filter((e) =>
+    ['WAREHOUSE', 'ALMACEN', 'ALMACÉN', 'FACTORY', 'PLANTA'].includes(
+      e.establishment_type?.toUpperCase(),
+    ),
+  ).length;
+  return {
+    total,
+    hospitals,
+    warehouses,
+    others: total - (hospitals + warehouses),
+  };
+});
+
+function formatLocation(est) {
+  const parts = [est.city_region, est.district].filter(Boolean);
+  return parts.length ? parts.join(', ') : '—';
 }
 
-function goTeam() {
-  router.push({
-    name: 'establishment-team',
-    params: { establishmentId: route.params.establishmentId },
-  });
+function formatType(type) {
+  const raw = String(type || '').toUpperCase();
+  if (raw === 'HOSPITAL') return t('establishment.typeHospital');
+  if (raw === 'WAREHOUSE') return t('establishment.typeWarehouse');
+  if (raw === 'CLINIC') return t('establishment.typeClinic');
+  return type || '—';
 }
+
+onMounted(loadData);
+
+const viewDetails = (id) => {
+  router.push({
+    name: 'establishment-detail',
+    params: { establishmentId: String(id) },
+  });
+};
+
+const goHome = () => router.push({ name: 'home-health-entity' });
 </script>
 
 <template>
-  <div class="est-detail">
-    <header class="toolbar">
-      <pv-button
-        icon="pi pi-arrow-left"
-        class="p-button-text p-button-sm"
-        :aria-label="t('establishment.back')"
-        @click="goList"
-      />
-      <h1 class="title">{{ establishment?.establishment_name || t('establishment.detailTitle') }}</h1>
-    </header>
+  <div class="est-flow-page">
+    <nav class="est-flow-back-bar" aria-label="Navegación">
+      <button type="button" class="est-flow-back-btn" @click="goHome">
+        <i class="pi pi-arrow-left" aria-hidden="true"></i>
+        <span>{{ t('establishment.backToHome') }}</span>
+      </button>
+    </nav>
 
-    <div v-if="loading" class="state">
-      <i class="pi pi-spin pi-spinner" />
-      <span>{{ t('establishment.detailLoading') }}</span>
-    </div>
+    <div class="est-flow-card">
+      <header class="est-flow-head est-flow-head--row">
+        <div class="est-flow-head__text">
+          <h1 class="est-flow-title">{{ t('establishment.establishments') }}</h1>
+          <p class="est-flow-subtitle">{{ t('establishment.listPageSubtitle') }}</p>
+        </div>
+        <div class="est-flow-stats">
+          <div class="est-flow-stat">
+            <span class="est-flow-stat__label">{{ t('establishment.statTotal') }}</span>
+            <span class="est-flow-stat__value">{{ stats.total }}</span>
+          </div>
+          <div class="est-flow-stat est-flow-stat--blue">
+            <span class="est-flow-stat__label">{{ t('establishment.statHospitals') }}</span>
+            <span class="est-flow-stat__value">{{ stats.hospitals }}</span>
+          </div>
+          <div class="est-flow-stat est-flow-stat--teal">
+            <span class="est-flow-stat__label">{{ t('establishment.statWarehouses') }}</span>
+            <span class="est-flow-stat__value">{{ stats.warehouses }}</span>
+          </div>
+          <div v-if="stats.others > 0" class="est-flow-stat">
+            <span class="est-flow-stat__label">{{ t('establishment.statOthers') }}</span>
+            <span class="est-flow-stat__value">{{ stats.others }}</span>
+          </div>
+        </div>
+      </header>
 
-    <div v-else-if="!establishment" class="state warn">
-      <p>{{ t('establishment.notFound') }}</p>
-      <pv-button :label="t('establishment.back')" class="p-button-sm" @click="goList" />
-    </div>
-
-    <template v-else>
-      <div class="grid">
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldId') }}</span>
-          <span class="val">{{ establishment.id }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldType') }}</span>
-          <span class="val">{{ displayType }}</span>
-        </div>
-        <div class="field span2">
-          <span class="lab">{{ t('establishment.fieldName') }}</span>
-          <span class="val">{{ establishment.establishment_name }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldAddress') }}</span>
-          <span class="val">{{ establishment.address || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldDistrict') }}</span>
-          <span class="val">{{ establishment.district || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldCity') }}</span>
-          <span class="val">{{ establishment.city_region || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldCountry') }}</span>
-          <span class="val">{{ establishment.country || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldPhone') }}</span>
-          <span class="val">{{ establishment.phone || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldEmail') }}</span>
-          <span class="val">{{ establishment.email || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldWebsite') }}</span>
-          <span class="val">{{ establishment.website || '—' }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldOperatorsCount') }}</span>
-          <span class="val">{{ operatorsCount }}</span>
-        </div>
-        <div class="field">
-          <span class="lab">{{ t('establishment.fieldDevicesCount') }}</span>
-          <span class="val">{{ devicesCount }}</span>
+      <div class="est-flow-toolbar">
+        <div class="est-flow-search">
+          <i class="pi pi-search" aria-hidden="true"></i>
+          <input
+            v-model="searchQuery"
+            type="search"
+            :placeholder="t('establishment.searchPlaceholder')"
+            autocomplete="off"
+          />
         </div>
       </div>
 
-      <footer class="actions">
-        <pv-button :label="t('establishment.viewOperatorsTeam')" class="p-button-sm primary-cta" @click="goTeam" />
-      </footer>
-    </template>
+      <div v-if="isLoading" class="est-flow-state">
+        <i class="pi pi-spin pi-spinner" aria-hidden="true"></i>
+        <span>{{ t('establishment.loadingEstablishments') }}</span>
+      </div>
+
+      <div v-else-if="filteredEst.length === 0" class="est-flow-state">
+        <i class="pi pi-filter-slash" aria-hidden="true"></i>
+        <span>{{ t('establishment.emptySearch') }}</span>
+      </div>
+
+      <div v-else class="est-flow-table-wrap">
+        <table class="est-flow-table">
+          <thead>
+            <tr>
+              <th>{{ t('establishment.colName') }}</th>
+              <th>{{ t('establishment.colLocation') }}</th>
+              <th>{{ t('establishment.colType') }}</th>
+              <th>{{ t('establishment.statusActive') }}</th>
+              <th class="est-flow-table__actions">{{ t('establishment.colActions') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="est in filteredEst" :key="est.id">
+              <td>
+                <div class="est-flow-table__name">{{ est.establishment_name }}</div>
+                <div v-if="est.address" class="est-flow-table__meta">{{ est.address }}</div>
+              </td>
+              <td>{{ formatLocation(est) }}</td>
+              <td>
+                <span class="est-flow-type-tag">{{ formatType(est.establishment_type) }}</span>
+              </td>
+              <td>
+                <span class="est-flow-status">
+                  <span class="est-flow-status__dot" aria-hidden="true"></span>
+                  {{ t('establishment.statusActive') }}
+                </span>
+              </td>
+              <td class="est-flow-table__actions">
+                <button
+                  type="button"
+                  class="est-flow-icon-btn"
+                  :aria-label="t('establishment.viewDetail')"
+                  @click="viewDetails(est.id)"
+                >
+                  <i class="pi pi-eye" aria-hidden="true"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
-
-<style scoped>
-.est-detail {
-  max-width: 880px;
-  margin: 0 auto;
-  padding: 1.25rem 1.5rem 2rem;
-  animation: fade 0.35s ease;
-}
-@keyframes fade {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
-}
-.title {
-  margin: 0;
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.02em;
-}
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.65rem 1rem;
-}
-.field {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0.55rem 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.field.span2 {
-  grid-column: span 2;
-}
-.lab {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #475569;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.val {
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: #ea580c;
-  word-break: break-word;
-}
-.actions {
-  margin-top: 1.25rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-.primary-cta {
-  background: #ea580c;
-  border-color: #ea580c;
-}
-.state {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  color: #64748b;
-  font-size: 0.9rem;
-  padding: 2rem 0;
-}
-.state.warn {
-  flex-direction: column;
-  align-items: flex-start;
-}
-@media (max-width: 640px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
-  .field.span2 {
-    grid-column: span 1;
-  }
-}
-</style>

@@ -4,11 +4,12 @@ import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter, useRoute } from 'vue-router';
 import { readAuthSession } from '../../../iam/infrastructure/auth-session.js';
-import { logout as authLogout } from '../../../iam/infrastructure/auth.service.js';
+import useIamStore from '../../../iam/application/iam.store.js';
 
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
+const iamStore = useIamStore();
 
 const sidebarOpen = ref(true);
 const profileMenuOpen = ref(false);
@@ -65,7 +66,7 @@ function goToProfile() {
 function handleLogout() {
   closeProfileMenu();
   sessionStorage.removeItem('meditrack_plan_context');
-  authLogout();
+  iamStore.logout();
   router.push({ name: 'login' });
 }
 

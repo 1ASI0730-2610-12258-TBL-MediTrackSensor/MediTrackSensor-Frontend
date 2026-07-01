@@ -4,13 +4,14 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import AuthPanel from '../components/auth-panel.vue';
-import { saveRegistrationPlan } from '../../infrastructure/auth.service.js';
+import useIamStore from '../../application/iam.store.js';
 import { readPendingRegistration } from '../../infrastructure/auth-session.js';
 import { Subscription } from '../../../subscriptions/domain/model/subscription.entity.js';
 
 const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
+const iamStore = useIamStore();
 
 onMounted(() => {
   if (!readPendingRegistration()) {
@@ -54,7 +55,7 @@ function selectPlan(plan) {
     });
     return;
   }
-  saveRegistrationPlan(plan.id);
+  iamStore.saveRegistrationPlan(plan.id);
   router.push({ name: 'iam-billing' });
 }
 

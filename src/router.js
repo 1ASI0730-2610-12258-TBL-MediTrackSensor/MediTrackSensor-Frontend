@@ -10,6 +10,7 @@ import logisticsRoutes from "./logistics/presentation/logistics-routes.js";
 import subscriptionsRoutes from "./subscriptions/presentation/subscriptions-routes.js";
 import iamRoutes from "./iam/presentation/iam-routes.js";
 import iamAuthRoutes from "./iam/presentation/iam-auth-routes.js";
+import { authenticationGuard } from "./iam/infrastructure/authentication.guard.js";
 
 const pageNotFound = () => import('./shared/presentation/views/page-not-found.vue');
 const iamAuthLayout = () => import('./iam/presentation/views/auth-layout.vue');
@@ -53,6 +54,7 @@ const router = createRouter({
 router.beforeEach((to, from) => {
     let baseTitle = 'MediTrack Sensor';
     document.title = `${baseTitle} - ${to.meta['title']}`;
+    return authenticationGuard(to, from);
 });
 
 export default router;

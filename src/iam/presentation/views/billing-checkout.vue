@@ -4,12 +4,13 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import AuthPanel from '../components/auth-panel.vue';
-import { completeHealthEntityRegistration } from '../../infrastructure/auth.service.js';
+import useIamStore from '../../application/iam.store.js';
 import { readPendingPlan, readPendingRegistration } from '../../infrastructure/auth-session.js';
 
 const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
+const iamStore = useIamStore();
 
 const card = ref({ cardNumber: '', expiry: '', cvv: '' });
 const loading = ref(false);
@@ -34,7 +35,7 @@ function goBack() {
 async function onSubmit() {
   loading.value = true;
   try {
-    const result = await completeHealthEntityRegistration(card.value);
+    const result = await iamStore.completeHealthEntityRegistration(card.value);
     if (!result.ok) {
       if (result.errors) {
         const key = Object.keys(result.errors)[0];

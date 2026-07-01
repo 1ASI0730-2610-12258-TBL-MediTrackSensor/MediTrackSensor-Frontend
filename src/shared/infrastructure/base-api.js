@@ -1,5 +1,5 @@
 import axios from "axios";
-import { AUTH_SESSION_KEY } from '../../iam/infrastructure/auth-session.js';
+import { iamInterceptor } from '../../iam/infrastructure/iam.interceptor.js';
 
 const platformApi =
     import.meta.env.VITE_API_BASE_URL ||
@@ -29,19 +29,8 @@ export class BaseApi {
             }
         });
 
-        // Attach JWT token automatically on every request
-        this.#http.interceptors.request.use((config) => {
-            try {
-                const raw = sessionStorage.getItem(AUTH_SESSION_KEY);
-                const session = raw ? JSON.parse(raw) : null;
-                if (session?.token) {
-                    config.headers['Authorization'] = `Bearer ${session.token}`;
-                }
-            } catch {
-                // ignore parse errors
-            }
-            return config;
-        });
+        // Attach the IAM bearer token automatically on every request.
+        this.#http.interceptors.request.use(iamInterceptor);
     }
 
     /**

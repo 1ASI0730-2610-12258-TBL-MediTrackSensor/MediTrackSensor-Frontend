@@ -4,11 +4,12 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import AuthPanel from '../components/auth-panel.vue';
-import { loginOperationalStaff } from '../../infrastructure/auth.service.js';
+import useIamStore from '../../application/iam.store.js';
 
 const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
+const iamStore = useIamStore();
 
 const email = ref('');
 const password = ref('');
@@ -24,7 +25,7 @@ async function onSubmit() {
   }
   loading.value = true;
   try {
-    const result = await loginOperationalStaff(email.value, password.value);
+    const result = await iamStore.loginOperationalStaff(email.value, password.value);
     if (!result.ok) {
       const msg = t(`iam.errors.${result.error}`);
       errors.value.email = msg;

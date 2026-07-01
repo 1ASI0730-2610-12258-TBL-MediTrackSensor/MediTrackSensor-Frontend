@@ -4,11 +4,12 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import AuthPanel from '../components/auth-panel.vue';
-import { registerOperationalStaff } from '../../infrastructure/auth.service.js';
+import useIamStore from '../../application/iam.store.js';
 
 const { t } = useI18n();
 const router = useRouter();
 const toast = useToast();
+const iamStore = useIamStore();
 
 const form = ref({ name: '', email: '', password: '', entityCode: '' });
 const loading = ref(false);
@@ -28,7 +29,7 @@ async function onSubmit() {
   }
   loading.value = true;
   try {
-    const result = await registerOperationalStaff(form.value);
+    const result = await iamStore.registerOperationalStaff(form.value);
     if (!result.ok) {
       toast.add({ severity: 'error', summary: t('iam.errors.title'), detail: t(`iam.errors.${result.error}`), life: 4000 });
       return;

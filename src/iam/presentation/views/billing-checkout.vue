@@ -51,8 +51,11 @@ async function onSubmit() {
         severity: 'error',
         summary: t('iam.errors.title'),
         detail: t(`iam.errors.${result.error}`),
-        life: 4000,
+        life: 5000,
       });
+      if (result.error === 'emailExists') {
+        router.push({ name: 'iam-login-health-entity' });
+      }
       return;
     }
     toast.add({

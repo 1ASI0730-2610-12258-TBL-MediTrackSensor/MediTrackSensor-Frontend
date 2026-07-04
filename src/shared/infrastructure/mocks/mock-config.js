@@ -1,6 +1,6 @@
-/** @returns {boolean} Activo por defecto hasta conectar el backend real. */
+/** @returns {boolean} Solo activo cuando VITE_USE_MOCKS es explícitamente "true". */
 export function isMockMode() {
-    return import.meta.env.VITE_USE_MOCKS !== 'false';
+    return import.meta.env.VITE_USE_MOCKS === 'true';
 }
 
 function mockDelay(ms = 180) {

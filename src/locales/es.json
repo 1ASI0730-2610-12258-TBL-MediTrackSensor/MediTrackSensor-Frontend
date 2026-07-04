@@ -429,7 +429,7 @@
       "requiredField": "Requerido",
       "weakPassword": "Mínimo 6 caracteres.",
       "network": "Error de conexión.",
-      "emailExists": "Correo ya registrado.",
+      "emailExists": "Correo ya registrado. Inicia sesión con ese correo.",
       "invalidEntityCode": "Código de entidad inválido.",
       "invalidCredentials": "Correo o contraseña incorrectos.",
       "entityCodeRequired": "El código es obligatorio.",

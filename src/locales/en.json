@@ -429,7 +429,7 @@
       "requiredField": "Required",
       "weakPassword": "At least 6 characters.",
       "network": "Connection error.",
-      "emailExists": "Email already registered.",
+      "emailExists": "Email already registered. Sign in with that email.",
       "invalidEntityCode": "Invalid entity code.",
       "invalidCredentials": "Invalid email or password.",
       "entityCodeRequired": "Entity code is required.",

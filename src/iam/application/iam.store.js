@@ -386,7 +386,11 @@ const useIamStore = defineStore('iam', () => {
                 });
             } catch (err) {
                 console.error('Registration failed:', err?.response?.data ?? err.message);
-                return { ok: false, error: 'registrationFailed' };
+                const message = String(err?.response?.data?.error ?? '').toLowerCase();
+                if (err?.response?.status === 400 && message.includes('email already exists')) {
+                    return { ok: false, error: 'emailExists' };
+                }
+                return { ok: false, error: 'networkError' };
             }
         }
 
@@ -433,7 +437,7 @@ const useIamStore = defineStore('iam', () => {
             return { ok: true, entityName: matchedAdmin.entity_name };
         } catch (err) {
             const status = err?.response?.status;
-            if (status === 400) return { ok: false, error: 'emailAlreadyExists' };
+            if (status === 400) return { ok: false, error: 'emailExists' };
             return { ok: false, error: 'networkError' };
         }
     }

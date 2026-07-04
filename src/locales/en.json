@@ -434,7 +434,9 @@
       "invalidCredentials": "Invalid email or password.",
       "entityCodeRequired": "Entity code is required.",
       "missingRegistration": "Complete registration before choosing a plan.",
-      "missingPlan": "Please select a plan."
+      "missingPlan": "Please select a plan.",
+      "registrationFailed": "Registration could not be completed. Try with a different email.",
+      "serverError": "Server error. Wait a few minutes and try with a new email."
     },
     "payment": {
       "title": "Billing information",

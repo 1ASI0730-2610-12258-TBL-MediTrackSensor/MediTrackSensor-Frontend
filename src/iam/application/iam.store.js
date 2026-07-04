@@ -379,9 +379,16 @@ const useIamStore = defineStore('iam', () => {
                 });
             } catch (err) {
                 console.error('Registration failed:', err?.response?.data ?? err.message);
-                const message = String(err?.response?.data?.error ?? '').toLowerCase();
-                if (err?.response?.status === 400 && message.includes('email already exists')) {
+                const status = err?.response?.status;
+                const message = String(err?.response?.data?.error ?? err?.response?.data?.detail ?? '').toLowerCase();
+                if (status === 400 && message.includes('email already exists')) {
                     return { ok: false, error: 'emailExists' };
+                }
+                if (status === 400 && message.includes('admin')) {
+                    return { ok: false, error: 'registrationFailed' };
+                }
+                if (status === 500) {
+                    return { ok: false, error: 'serverError' };
                 }
                 return { ok: false, error: 'network' };
             }

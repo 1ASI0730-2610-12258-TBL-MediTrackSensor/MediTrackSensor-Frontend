@@ -434,7 +434,9 @@
       "invalidCredentials": "Correo o contraseña incorrectos.",
       "entityCodeRequired": "El código es obligatorio.",
       "missingRegistration": "Completa el registro antes de elegir plan.",
-      "missingPlan": "Selecciona un plan."
+      "missingPlan": "Selecciona un plan.",
+      "registrationFailed": "No se pudo completar el registro. Intenta con otro correo.",
+      "serverError": "Error en el servidor. Espera unos minutos e intenta con un correo nuevo."
     },
     "payment": {
       "title": "Información de facturación",

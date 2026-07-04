@@ -60,6 +60,16 @@ const medType = computed(() => {
   const key = map[raw];
   return key ? t(`logistics.${key}`) : transport.value?.type_of_medication || '—';
 });
+
+const transportPlate = computed(() => {
+  if (!transport.value?.id) return '—';
+  const prefix = String(transport.value.type_of_transport || 'TR')
+    .replace(/([a-z])([A-Z])/g, '$1_$2')
+    .split(/[_\s-]+/)[0]
+    .slice(0, 3)
+    .toUpperCase() || 'TR';
+  return `${prefix}-${String(transport.value.id).padStart(4, '0')}`;
+});
 </script>
 
 <template>
@@ -85,11 +95,16 @@ const medType = computed(() => {
 
     <div v-else class="est-flow-card">
       <header class="est-flow-head">
-        <h1 class="est-flow-title">{{ transportType }}</h1>
-        <p class="est-flow-subtitle">{{ t('logistics.transportInfo') }}</p>
+        <p class="est-flow-eyebrow">{{ t('logistics.fieldPlate') }}</p>
+        <h1 class="est-flow-title">{{ transportPlate }}</h1>
+        <p class="est-flow-subtitle">{{ transportType }} · {{ t('logistics.transportInfo') }}</p>
       </header>
 
       <div class="est-flow-fields est-flow-fields--span">
+        <div class="est-flow-field">
+          <span class="est-flow-field__label">{{ t('logistics.fieldPlate') }}</span>
+          <span class="est-flow-field__value transport-plate">{{ transportPlate }}</span>
+        </div>
         <div class="est-flow-field">
           <span class="est-flow-field__label">{{ t('logistics.fieldId') }}</span>
           <span class="est-flow-field__value">{{ transport.id }}</span>
@@ -121,3 +136,21 @@ const medType = computed(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.transport-plate {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--mt-primary);
+}
+
+.est-flow-eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mt-text-muted);
+}
+</style>

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { fetchDashboardPayload } from '../../../shared/infrastructure/dashboard-payload.js';
@@ -12,6 +12,9 @@ const operators = ref([]);
 const isLoading = ref(true);
 const searchQuery = ref('');
 const selectedId = ref(null);
+const statusFilter = ref('all');
+const typeFilter = ref('all');
+const regionFilter = ref('all');
 const mapContainerRef = ref(null);
 
 let map = null;
@@ -92,13 +95,29 @@ function destroyMap() {
 
 const filteredEstablishments = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return establishments.value;
-  return establishments.value.filter(
-    (est) =>
+  return establishments.value.filter((est) => {
+    const matchesSearch =
+      !q ||
       (est.establishment_name || '').toLowerCase().includes(q) ||
       (est.city_region || '').toLowerCase().includes(q) ||
-      (est.district || '').toLowerCase().includes(q),
-  );
+      (est.district || '').toLowerCase().includes(q);
+    const matchesStatus = statusFilter.value === 'all' || est.status === statusFilter.value;
+    const typeRaw = String(est.establishment_type || '').toUpperCase();
+    const matchesType = typeFilter.value === 'all' || typeRaw === typeFilter.value;
+    const matchesRegion =
+      regionFilter.value === 'all' ||
+      String(est.city_region || '').toLowerCase() === regionFilter.value.toLowerCase();
+    return matchesSearch && matchesStatus && matchesType && matchesRegion;
+  });
+});
+
+const regionOptions = computed(() => {
+  const regions = [...new Set(establishments.value.map((e) => e.city_region).filter(Boolean))];
+  return regions.sort((a, b) => String(a).localeCompare(String(b)));
+});
+
+watch(filteredEstablishments, () => {
+  updateMarkers();
 });
 
 async function initMap() {
@@ -151,6 +170,7 @@ const updateMarkers = () => {
   const orangeIcon = L.divIcon({ className: 'custom-pin orange' });
 
   establishments.value.forEach((est) => {
+    if (!filteredEstablishments.value.some((f) => f.id === est.id)) return;
     const icon = est.status === 'operational' ? blueIcon : orangeIcon;
     const marker = L.marker([est.lat, est.lng], { icon }).addTo(map);
     marker.on('click', () => {
@@ -290,6 +310,24 @@ onBeforeUnmount(() => {
               :placeholder="t('establishment.mapSearchPlaceholder')"
               autocomplete="off"
             />
+          </div>
+
+          <div class="map-sidebar__filters">
+            <select v-model="statusFilter" class="map-filter-select" :aria-label="t('establishment.mapFilterStatus')">
+              <option value="all">{{ t('establishment.mapFilterAllStatus') }}</option>
+              <option value="operational">{{ t('establishment.mapStatusOperational') }}</option>
+              <option value="maintenance">{{ t('establishment.mapStatusMaintenance') }}</option>
+            </select>
+            <select v-model="typeFilter" class="map-filter-select" :aria-label="t('establishment.mapFilterType')">
+              <option value="all">{{ t('establishment.mapFilterAllTypes') }}</option>
+              <option value="HOSPITAL">{{ t('establishment.typeHospital') }}</option>
+              <option value="CLINIC">{{ t('establishment.typeClinic') }}</option>
+              <option value="WAREHOUSE">{{ t('establishment.typeWarehouse') }}</option>
+            </select>
+            <select v-model="regionFilter" class="map-filter-select" :aria-label="t('establishment.mapFilterRegion')">
+              <option value="all">{{ t('establishment.mapFilterAllRegions') }}</option>
+              <option v-for="region in regionOptions" :key="region" :value="region">{{ region }}</option>
+            </select>
           </div>
 
           <div class="map-sidebar__list">
@@ -517,6 +555,24 @@ onBeforeUnmount(() => {
   outline: none;
   border-color: var(--mt-primary);
   box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.1);
+}
+
+.map-sidebar__filters {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.45rem;
+  padding: 0 1rem 0.75rem;
+}
+
+.map-filter-select {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--mt-border);
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-family: inherit;
+  color: var(--mt-heading);
+  background: #fff;
 }
 
 .map-sidebar__list {

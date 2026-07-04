@@ -2,8 +2,6 @@ import { createRouter, createWebHistory } from "vue-router";
 import Layout from "./shared/presentation/components/layout.vue";
 import Login from "./iam/presentation/views/login.vue";
 import Home from "./shared/presentation/views/home.vue";
-import HomeHealthEntity from "./shared/presentation/views/home-health-entity.vue";
-import HomeOperationalStaff from "./shared/presentation/views/home-operational-staff.vue";
 import establishmentRoutes from "./establishment/presentation/establishment-routes.js";
 import monitoringRoutes from "./monitoring/presentation/monitoring-routes.js";
 import logisticsRoutes from "./logistics/presentation/logistics-routes.js";
@@ -33,8 +31,18 @@ const routes = [
         component: Layout,
         children: [
             { path: 'home', name: 'home', component: Home, meta: { title: 'Home' } },
-            { path: 'home-health-entity', name: 'home-health-entity', component: HomeHealthEntity, meta: { title: 'Home' } },
-            { path: 'home-operational-staff', name: 'home-operational-staff', component: HomeOperationalStaff, meta: { title: 'Home' } },
+            { path: 'home-health-entity', redirect: { name: 'home-health-entity' } },
+            { path: 'home-operational-staff', redirect: { name: 'home-operational-staff' } },
+            { path: 'profile', redirect: () => {
+                try {
+                    const raw = sessionStorage.getItem('meditrack_auth_session');
+                    const session = raw ? JSON.parse(raw) : null;
+                    const profileId = session?.userId ?? session?.id ?? 'me';
+                    return { name: 'profile', params: { profileId: String(profileId) } };
+                } catch {
+                    return { name: 'profile', params: { profileId: 'me' } };
+                }
+            }},
             { path: 'establishment', name: 'establishment', children: establishmentRoutes },
             { path: 'monitoring', name: 'monitoring', children: monitoringRoutes },
             { path: 'logistics', name: 'logistics', children: logisticsRoutes },

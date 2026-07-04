@@ -10,6 +10,7 @@ import {
   writeAuthSession,
 } from '../../../iam/infrastructure/auth-session.js';
 import useIamStore from '../../../iam/application/iam.store.js';
+import { getProfileRoute } from '../../../shared/infrastructure/route.helpers.js';
 import MtConfirmDialog from '../../../shared/presentation/components/mt-confirm-dialog.vue';
 import { onBeforeRouteLeave } from 'vue-router';
 
@@ -101,7 +102,7 @@ const formattedBenefitsEnd = computed(() => {
 });
 
 const backToProfile = () => {
-  router.push({ name: 'profile' });
+  router.push(getProfileRoute());
 };
 
 const isCurrent = (id) => id === currentCatalogId.value;
@@ -184,7 +185,7 @@ const selectPlan = (catalogId) => {
     detail: t('plansPage.planUpdatedDetail', { plan: plan?.name ?? '' }),
     life: 3500,
   });
-  router.push({ name: 'profile' });
+  router.push(getProfileRoute());
 };
 </script>
 

@@ -120,6 +120,20 @@ const useMonitoringStore = defineStore('monitoring', () => {
         });
     }
 
+    async function deleteDeviceAsync(device) {
+        try {
+            if (!isMockMode()) {
+                await monitoringApi.deleteDevice(device.id);
+            }
+            const index = devices.value.findIndex((d) => d.id === device.id);
+            if (index !== -1) devices.value.splice(index, 1);
+            return true;
+        } catch (error) {
+            errors.value.push(error);
+            throw error;
+        }
+    }
+
     function deleteDevice(device) {
         monitoringApi.deleteDevice(device.id).then(() => {
             const index = devices.value.findIndex((d) => d.id === device.id);
@@ -179,6 +193,7 @@ const useMonitoringStore = defineStore('monitoring', () => {
         createDeviceAsync,
         updateDevice,
         deleteDevice,
+        deleteDeviceAsync,
         pushSimulatedReadings,
         startSimulation,
         stopSimulation,

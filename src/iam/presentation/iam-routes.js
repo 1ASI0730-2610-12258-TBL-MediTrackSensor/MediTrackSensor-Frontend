@@ -1,6 +1,8 @@
 // Lazy-loaded components
 const profile = () => import('./views/profile.vue');
 const notAssigned = () => import('./views/not-assigned-establishment.vue');
+const homeHealthEntity = () => import('../../shared/presentation/views/home-health-entity.vue');
+const homeOperationalStaff = () => import('../../shared/presentation/views/home-operational-staff.vue');
 
 /**
  * Route definitions for the IAM bounded context (authenticated area).
@@ -10,7 +12,19 @@ const notAssigned = () => import('./views/not-assigned-establishment.vue');
  */
 const iamRoutes = [
     {
-        path: 'profile',
+        path: 'home/health-entity',
+        name: 'home-health-entity',
+        component: homeHealthEntity,
+        meta: { title: 'Home', requiresAuth: true },
+    },
+    {
+        path: 'home/operational-staff',
+        name: 'home-operational-staff',
+        component: homeOperationalStaff,
+        meta: { title: 'Home', requiresAuth: true },
+    },
+    {
+        path: 'profile/:profileId',
         name: 'profile',
         component: profile,
         meta: { title: 'Profile', requiresAuth: true },

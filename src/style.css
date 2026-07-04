@@ -382,6 +382,16 @@ h3 {
   color: var(--mt-primary-hover);
 }
 
+.est-flow-icon-btn--danger {
+  color: #dc2626;
+}
+
+.est-flow-icon-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
 .est-flow-icon-btn i {
   font-size: 0.95rem;
 }

@@ -157,7 +157,13 @@
     "mapManageSite": "View establishment",
     "mapZoomIn": "Zoom in",
     "mapZoomOut": "Zoom out",
-    "mapCenterLima": "Center on Lima"
+    "mapCenterLima": "Center on Lima",
+    "mapFilterStatus": "Filter by status",
+    "mapFilterType": "Filter by type",
+    "mapFilterRegion": "Filter by region",
+    "mapFilterAllStatus": "All statuses",
+    "mapFilterAllTypes": "All types",
+    "mapFilterAllRegions": "All regions"
   },
   "monitoring": {
     "devices": "View Devices",
@@ -215,6 +221,11 @@
     "loadingDevices": "Loading devices…",
     "emptySearch": "No devices found.",
     "viewDetail": "View detail",
+    "deleteDevice": "Delete device",
+    "deleteConfirmTitle": "Delete device?",
+    "deleteConfirmMessage": "This action cannot be undone. The device will be removed from the system.",
+    "deleteSuccess": "Device deleted successfully",
+    "deleteError": "Could not delete the device",
     "detailLoading": "Loading…",
     "deviceNotFound": "Device not found.",
     "deviceInfo": "Device information",
@@ -282,6 +293,7 @@
     "transportNotFound": "Transport not found.",
     "transportInfo": "Transport information",
     "fieldId": "ID",
+    "fieldPlate": "Transport plate",
     "fieldTransportType": "Type of transport",
     "fieldMedication": "Type of medication",
     "sensorsHint": "Required parameters for the medication type are pre-selected; enable others if you want them measured.",
@@ -350,13 +362,16 @@
     "goHome": "Go Home",
     "builtWith": "Built with",
     "using": "using",
-    "profile": "Profile"
+    "profile": "Profile",
+    "cancel": "Cancel"
   },
   "layout": {
     "appTitle": "Monitoring management system",
     "goToProfile": "Go to profile",
     "showSidebar": "Show menu",
     "hideSidebar": "Hide menu",
+    "collapseSidebar": "Collapse menu",
+    "searchNav": "Search module…",
     "guestUser": "User"
   },
   "iam": {

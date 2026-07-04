@@ -157,7 +157,13 @@
     "mapManageSite": "Ver establecimiento",
     "mapZoomIn": "Acercar",
     "mapZoomOut": "Alejar",
-    "mapCenterLima": "Centrar en Lima"
+    "mapCenterLima": "Centrar en Lima",
+    "mapFilterStatus": "Filtrar por estado",
+    "mapFilterType": "Filtrar por tipo",
+    "mapFilterRegion": "Filtrar por región",
+    "mapFilterAllStatus": "Todos los estados",
+    "mapFilterAllTypes": "Todos los tipos",
+    "mapFilterAllRegions": "Todas las regiones"
   },
   "monitoring": {
     "devices": "Ver Dispositivos",
@@ -215,6 +221,11 @@
     "loadingDevices": "Cargando dispositivos…",
     "emptySearch": "No se encontraron dispositivos.",
     "viewDetail": "Ver detalle",
+    "deleteDevice": "Eliminar dispositivo",
+    "deleteConfirmTitle": "¿Eliminar dispositivo?",
+    "deleteConfirmMessage": "Esta acción no se puede deshacer. Se eliminará el dispositivo del sistema.",
+    "deleteSuccess": "Dispositivo eliminado correctamente",
+    "deleteError": "No se pudo eliminar el dispositivo",
     "detailLoading": "Cargando…",
     "deviceNotFound": "Dispositivo no encontrado.",
     "deviceInfo": "Información del dispositivo",
@@ -282,6 +293,7 @@
     "transportNotFound": "Transporte no encontrado.",
     "transportInfo": "Información del transporte",
     "fieldId": "ID",
+    "fieldPlate": "Placa de transporte",
     "fieldTransportType": "Tipo de transporte",
     "fieldMedication": "Tipo de medicamento",
     "sensorsHint": "Los parámetros requeridos para el tipo de medicamento vienen marcados; activa otros si deseas medirlos.",
@@ -350,13 +362,16 @@
     "goHome": "Ir al Inicio",
     "builtWith": "Hecho con",
     "using": "utilizando",
-    "profile": "Perfil"
+    "profile": "Perfil",
+    "cancel": "Cancelar"
   },
   "layout": {
     "appTitle": "Sistema de gestión de monitoreo",
     "goToProfile": "Ir a perfil",
     "showSidebar": "Mostrar menú",
     "hideSidebar": "Ocultar menú",
+    "collapseSidebar": "Contraer menú",
+    "searchNav": "Buscar módulo…",
     "guestUser": "Usuario"
   },
   "iam": {

@@ -2,16 +2,21 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { useToast } from 'primevue/usetoast';
 import useMonitoringStore from '../../application/monitoring.store.js';
 import SensorReadingsGrid from '../components/sensor-readings-grid.vue';
+import MtConfirmDialog from '../../../shared/presentation/components/mt-confirm-dialog.vue';
 
 const route = useRoute();
 const router = useRouter();
 const { t } = useI18n();
+const toast = useToast();
 const monitoringStore = useMonitoringStore();
 
 const loading = ref(true);
 const device = ref(null);
+const deleteDialogVisible = ref(false);
+const deleting = ref(false);
 
 
 async function load() {
@@ -34,6 +39,20 @@ watch(() => route.params.deviceId, load);
 
 function goList() {
   router.push({ name: 'devices' });
+}
+
+async function confirmDelete() {
+  if (!device.value) return;
+  deleting.value = true;
+  try {
+    await monitoringStore.deleteDeviceAsync(device.value);
+    toast.add({ severity: 'success', summary: t('monitoring.deleteSuccess'), life: 3000 });
+    goList();
+  } catch {
+    toast.add({ severity: 'error', summary: t('monitoring.deleteError'), life: 4000 });
+  } finally {
+    deleting.value = false;
+  }
 }
 
 const medType = computed(() => {
@@ -108,11 +127,27 @@ const medType = computed(() => {
       </p>
 
       <footer class="est-flow-actions">
+        <button type="button" class="est-flow-btn est-flow-btn--danger" @click="deleteDialogVisible = true">
+          <i class="pi pi-trash" aria-hidden="true"></i>
+          <span>{{ t('monitoring.deleteDevice') }}</span>
+        </button>
         <button type="button" class="est-flow-btn est-flow-btn--ghost" @click="goList">
           <i class="pi pi-arrow-left" aria-hidden="true"></i>
           <span>{{ t('monitoring.back') }}</span>
         </button>
       </footer>
     </div>
+
+    <MtConfirmDialog
+      v-model:visible="deleteDialogVisible"
+      :title="t('monitoring.deleteConfirmTitle')"
+      :message="t('monitoring.deleteConfirmMessage')"
+      :meta="device ? (device.exact_location || `ID ${device.id}`) : ''"
+      :confirm-label="t('monitoring.deleteDevice')"
+      :cancel-label="t('common.cancel')"
+      confirm-tone="danger"
+      confirm-icon="pi pi-trash"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>

@@ -2,16 +2,22 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
+import { useToast } from 'primevue/usetoast';
 import useMonitoringStore from '../../application/monitoring.store.js';
+import MtConfirmDialog from '../../../shared/presentation/components/mt-confirm-dialog.vue';
 import { isMockMode } from '../../../shared/infrastructure/mocks/mock-config.js';
 
 const monitoringStore = useMonitoringStore();
 const router = useRouter();
 const { t } = useI18n();
+const toast = useToast();
 
 const devices = ref([]);
 const isLoading = ref(true);
 const searchQuery = ref('');
+const deleteTarget = ref(null);
+const deleteDialogVisible = ref(false);
+const deleting = ref(false);
 
 onMounted(async () => {
   try {
@@ -74,6 +80,26 @@ function goAdd() {
 
 function viewDevice(id) {
   router.push({ name: 'device-detail', params: { deviceId: String(id) } });
+}
+
+function askDelete(dev) {
+  deleteTarget.value = dev;
+  deleteDialogVisible.value = true;
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) return;
+  deleting.value = true;
+  try {
+    await monitoringStore.deleteDeviceAsync(deleteTarget.value);
+    devices.value = devices.value.filter((d) => d.id !== deleteTarget.value.id);
+    toast.add({ severity: 'success', summary: t('monitoring.deleteSuccess'), life: 3000 });
+  } catch {
+    toast.add({ severity: 'error', summary: t('monitoring.deleteError'), life: 4000 });
+  } finally {
+    deleting.value = false;
+    deleteTarget.value = null;
+  }
 }
 </script>
 
@@ -176,11 +202,31 @@ function viewDevice(id) {
                 >
                   <i class="pi pi-eye" aria-hidden="true"></i>
                 </button>
+                <button
+                  type="button"
+                  class="est-flow-icon-btn est-flow-icon-btn--danger"
+                  :aria-label="t('monitoring.deleteDevice')"
+                  @click="askDelete(dev)"
+                >
+                  <i class="pi pi-trash" aria-hidden="true"></i>
+                </button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
+
+    <MtConfirmDialog
+      v-model:visible="deleteDialogVisible"
+      :title="t('monitoring.deleteConfirmTitle')"
+      :message="t('monitoring.deleteConfirmMessage')"
+      :meta="deleteTarget ? (deleteTarget.exact_location || `ID ${deleteTarget.id}`) : ''"
+      :confirm-label="t('monitoring.deleteDevice')"
+      :cancel-label="t('common.cancel')"
+      confirm-tone="danger"
+      confirm-icon="pi pi-trash"
+      @confirm="confirmDelete"
+    />
   </div>
 </template>

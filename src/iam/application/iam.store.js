@@ -262,7 +262,7 @@ const useIamStore = defineStore('iam', () => {
         } catch (err) {
             const status = err?.response?.status;
             if (status === 401 || status === 400) return { ok: false, error: 'invalidCredentials' };
-            return { ok: false, error: 'networkError' };
+            return { ok: false, error: 'network' };
         }
     }
 
@@ -305,7 +305,7 @@ const useIamStore = defineStore('iam', () => {
         } catch (err) {
             const status = err?.response?.status;
             if (status === 401 || status === 400) return { ok: false, error: 'invalidCredentials' };
-            return { ok: false, error: 'networkError' };
+            return { ok: false, error: 'network' };
         }
     }
 
@@ -375,14 +375,7 @@ const useIamStore = defineStore('iam', () => {
                     role: 'Admin',
                     password: pending.password,
                     photo: '',
-                });
-                const userId = userResp.data.id;
-                const entityCode = `ENT-${userId}`;
-                await iamApi.createAdmin({
                     entity_name: pending.entityName,
-                    entity_code: entityCode,
-                    schedule: '',
-                    user_id: userId,
                 });
             } catch (err) {
                 console.error('Registration failed:', err?.response?.data ?? err.message);
@@ -390,7 +383,7 @@ const useIamStore = defineStore('iam', () => {
                 if (err?.response?.status === 400 && message.includes('email already exists')) {
                     return { ok: false, error: 'emailExists' };
                 }
-                return { ok: false, error: 'networkError' };
+                return { ok: false, error: 'network' };
             }
         }
 
@@ -438,7 +431,7 @@ const useIamStore = defineStore('iam', () => {
         } catch (err) {
             const status = err?.response?.status;
             if (status === 400) return { ok: false, error: 'emailExists' };
-            return { ok: false, error: 'networkError' };
+            return { ok: false, error: 'network' };
         }
     }
 

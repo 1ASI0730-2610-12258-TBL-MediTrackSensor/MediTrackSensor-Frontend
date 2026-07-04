@@ -67,31 +67,24 @@ export class Subscription {
         return Subscription.getPlanByCatalogId(catalogId).apiPlan;
     }
 
-    // ── Payment validation ────────────────────────────────────────────────────
-
+    /**
+     * Simulated payment gateway validation (UI demo only — no real processing).
+     */
     static validatePayment({ cardNumber, expiry, cvv }) {
         const errors = {};
 
         const digits = String(cardNumber || '').replace(/\D/g, '');
-        if (digits.length < 13 || digits.length > 19) {
+        if (digits.length < 8) {
             errors.cardNumber = 'invalidCardNumber';
         }
 
         const exp = String(expiry || '').trim();
-        const m = exp.match(/^(\d{2})\s*\/\s*(\d{2})$/);
-        if (!m) {
+        if (!/^\d{2}\s*\/\s*\d{2}$/.test(exp)) {
             errors.expiry = 'invalidExpiry';
-        } else {
-            const month = Number(m[1]);
-            const year = 2000 + Number(m[2]);
-            const expDate = new Date(year, month, 0);
-            if (month < 1 || month > 12 || expDate < new Date()) {
-                errors.expiry = 'expiredCard';
-            }
         }
 
         const cvvDigits = String(cvv || '').replace(/\D/g, '');
-        if (cvvDigits.length < 3 || cvvDigits.length > 4) {
+        if (cvvDigits.length < 3) {
             errors.cvv = 'invalidCvv';
         }
 

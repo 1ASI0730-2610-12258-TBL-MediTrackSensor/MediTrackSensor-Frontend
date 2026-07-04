@@ -443,6 +443,7 @@
       "expiry": "Vencimiento",
       "cvv": "Código de seguridad",
       "selectedPlan": "Plan seleccionado",
+      "demoHint": "Pasarela simulada: cualquier tarjeta con formato MM/AA sirve para la demo.",
       "submit": "Confirmar pago",
       "processing": "Procesando…",
       "successTitle": "¡Pago exitoso!",

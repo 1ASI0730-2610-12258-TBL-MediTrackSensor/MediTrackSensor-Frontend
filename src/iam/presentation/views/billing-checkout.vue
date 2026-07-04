@@ -80,6 +80,7 @@ async function onSubmit() {
         <p v-if="planLabel" class="reg-compact__hint">
           {{ t('iam.payment.selectedPlan') }}: <strong>{{ planLabel }}</strong>
         </p>
+        <p class="reg-compact__hint reg-compact__hint--demo">{{ t('iam.payment.demoHint') }}</p>
       </header>
 
       <form class="reg-compact__form" @submit.prevent="onSubmit">

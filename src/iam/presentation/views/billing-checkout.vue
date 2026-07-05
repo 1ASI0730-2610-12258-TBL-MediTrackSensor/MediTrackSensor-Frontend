@@ -37,21 +37,29 @@ async function onSubmit() {
   try {
     const result = await iamStore.completeHealthEntityRegistration(card.value);
     if (!result.ok) {
-      if (result.errors) {
+      if (result.phase === 'payment' && result.errors) {
         const key = Object.keys(result.errors)[0];
         toast.add({
-          severity: 'error',
-          summary: t('iam.errors.title'),
+          severity: 'warn',
+          summary: t('iam.payment.title'),
           detail: t(`iam.payment.${result.errors[key]}`),
           life: 5000,
         });
         return;
       }
+      if (result.paymentApproved) {
+        toast.add({
+          severity: 'success',
+          summary: t('iam.payment.successTitle'),
+          detail: t('iam.payment.approvedMock'),
+          life: 4000,
+        });
+      }
       toast.add({
         severity: 'error',
         summary: t('iam.errors.title'),
         detail: t(`iam.errors.${result.error}`),
-        life: 5000,
+        life: 6000,
       });
       if (result.error === 'emailExists') {
         router.push({ name: 'iam-login-health-entity' });

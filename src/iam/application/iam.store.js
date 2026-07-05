@@ -27,6 +27,10 @@ import { isMockMode } from '../../shared/infrastructure/mocks/mock-config.js';
 import { MockApi } from '../../shared/infrastructure/mocks/mock-api.service.js';
 import { mockDb, findMockUserByEmail } from '../../shared/infrastructure/mocks/mock-database.js';
 import { Subscription } from '../../subscriptions/domain/model/subscription.entity.js';
+import {
+    validateDemoPayment,
+    simulateDemoPaymentProcessing,
+} from '../../subscriptions/domain/model/demo-payment.gateway.js';
 
 const iamApi = new IamApi();
 
@@ -342,32 +346,33 @@ const useIamStore = defineStore('iam', () => {
     }
 
     /**
-     * Completes a health-entity registration by validating payment and creating
-     * the user + admin records (skipped in mock mode).
-     * @param {Object} payment - Card payment data.
+     * Demo payment (UI only) then health-entity sign-up on the real API.
+     * @param {Object} payment - Card fields from the billing screen (mock).
      * @returns {Promise<Object>} Result of the registration.
      */
     async function completeHealthEntityRegistration(payment) {
-        const validation = Subscription.validatePayment(payment);
-        if (!validation.valid) {
-            return { ok: false, errors: validation.errors };
+        const paymentValidation = validateDemoPayment(payment);
+        if (!paymentValidation.valid) {
+            return { ok: false, errors: paymentValidation.errors, phase: 'payment' };
         }
 
         const pending = readPendingRegistration();
         const plan = readPendingPlan();
         if (!pending || pending.segment !== 'health-entity') {
-            return { ok: false, error: 'missingRegistration' };
+            return { ok: false, error: 'missingRegistration', phase: 'registration' };
         }
         if (!plan?.planApiValue) {
-            return { ok: false, error: 'missingPlan' };
+            return { ok: false, error: 'missingPlan', phase: 'registration' };
         }
+
+        await simulateDemoPaymentProcessing();
 
         if (!isMockMode()) {
             try {
                 const today = new Date().toISOString().split('T')[0];
-                const userResp = await iamApi.createUser({
+                await iamApi.createUser({
                     name: pending.name,
-                    dni: '00000000', // placeholder — user updates in profile
+                    dni: '00000000',
                     email: pending.email,
                     phone: '',
                     job_title: 'Administrador',
@@ -382,20 +387,20 @@ const useIamStore = defineStore('iam', () => {
                 const status = err?.response?.status;
                 const message = String(err?.response?.data?.error ?? err?.response?.data?.detail ?? '').toLowerCase();
                 if (status === 400 && message.includes('email already exists')) {
-                    return { ok: false, error: 'emailExists' };
+                    return { ok: false, error: 'emailExists', phase: 'registration', paymentApproved: true };
                 }
                 if (status === 400 && message.includes('admin')) {
-                    return { ok: false, error: 'registrationFailed' };
+                    return { ok: false, error: 'registrationFailed', phase: 'registration', paymentApproved: true };
                 }
                 if (status === 500) {
-                    return { ok: false, error: 'serverError' };
+                    return { ok: false, error: 'serverError', phase: 'registration', paymentApproved: true };
                 }
-                return { ok: false, error: 'network' };
+                return { ok: false, error: 'network', phase: 'registration', paymentApproved: true };
             }
         }
 
         clearRegistrationFlow();
-        return { ok: true, email: pending.email };
+        return { ok: true, email: pending.email, paymentApproved: true };
     }
 
     /**

@@ -4,17 +4,22 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import useLogisticsStore from '../../application/logistics.store.js';
+import useEstablishmentStore from '../../../establishment/application/establishment.store.js';
 import { isMockMode } from '../../../shared/infrastructure/mocks/mock-config.js';
 import { getNextMockTransportId } from '../../../shared/infrastructure/mocks/mock-database.js';
 import { readAuthSession } from '../../../iam/infrastructure/auth-session.js';
 
 const logisticsStore = useLogisticsStore();
+const establishmentStore = useEstablishmentStore();
 const router = useRouter();
 const { t } = useI18n();
 const toast = useToast();
 
 const isSaving = ref(false);
 const previewId = ref('—');
+const establishmentOptions = ref([]);
+const selectedEstablishmentId = ref(null);
+const noEstablishment = ref(false);
 
 const form = ref({
   type_of_transport: 'Van',
@@ -46,6 +51,16 @@ const sensorDefs = [
 onMounted(async () => {
   try {
     await logisticsStore.fetchTransportsAsync();
+    const all = await establishmentStore.fetchEstablishmentsAsync();
+    const session = readAuthSession();
+    const adminId = session?.adminId;
+    const owned = adminId
+      ? all.filter((e) => Number(e.admin_id) === Number(adminId))
+      : all;
+    establishmentOptions.value = owned.length ? owned : all;
+    selectedEstablishmentId.value = establishmentOptions.value[0]?.id ?? null;
+    noEstablishment.value = !selectedEstablishmentId.value;
+
     if (isMockMode()) {
       previewId.value = String(getNextMockTransportId());
     } else {
@@ -56,6 +71,7 @@ onMounted(async () => {
   } catch (e) {
     console.error('transport-form onMounted error:', e);
     previewId.value = '—';
+    noEstablishment.value = true;
   }
 });
 
@@ -76,8 +92,10 @@ const medicationOptions = computed(() => [
 ]);
 
 function buildPayload() {
-  const session = readAuthSession();
-  const establishmentId = Number(session?.establishmentId) || 1;
+  const establishmentId = Number(selectedEstablishmentId.value);
+  if (!establishmentId) {
+    throw new Error('noEstablishment');
+  }
   return {
     type_of_transport: form.value.type_of_transport,
     type_of_medication: form.value.type_of_medication,
@@ -88,7 +106,15 @@ function buildPayload() {
 
 async function handleConfirm() {
   if (isSaving.value) return;
-
+  if (!selectedEstablishmentId.value) {
+    toast.add({
+      severity: 'warn',
+      summary: t('logistics.createError'),
+      detail: t('logistics.noEstablishmentForTransport'),
+      life: 6000,
+    });
+    return;
+  }
   isSaving.value = true;
   try {
     const created = await logisticsStore.createTransportAsync(buildPayload());
@@ -99,9 +125,13 @@ async function handleConfirm() {
     });
     router.push({ name: 'transport-detail', params: { transportId: String(created.id) } });
   } catch (e) {
+    const detail = e?.message === 'noEstablishment'
+      ? t('logistics.noEstablishmentForTransport')
+      : t('logistics.createError');
     toast.add({
       severity: 'error',
       summary: t('logistics.createError'),
+      detail,
       life: 5000,
     });
   } finally {
@@ -154,6 +184,21 @@ function goList() {
         </div>
 
         <div class="est-flow-field est-flow-field--full">
+          <span class="est-flow-field__label">{{ t('logistics.fieldEstablishment') }} *</span>
+          <select
+            v-if="establishmentOptions.length"
+            v-model="selectedEstablishmentId"
+            class="log-field-select"
+            required
+          >
+            <option v-for="est in establishmentOptions" :key="est.id" :value="est.id">
+              {{ est.establishment_name }}
+            </option>
+          </select>
+          <p v-else class="mon-hint mon-hint--warn">{{ t('logistics.noEstablishmentForTransport') }}</p>
+        </div>
+
+        <div class="est-flow-field est-flow-field--full">
           <p class="mon-hint">{{ t('logistics.sensorsHint') }}</p>
           <div class="mon-sensors-grid">
             <label v-for="def in sensorDefs" :key="def.key" class="mon-sensor-toggle">
@@ -198,6 +243,11 @@ function goList() {
   background-position: right 0.75rem center;
   background-size: 1rem;
   padding-right: 2.25rem;
+}
+
+.mon-hint--warn {
+  color: #b45309;
+  font-weight: 600;
 }
 
 .log-field-select:focus {

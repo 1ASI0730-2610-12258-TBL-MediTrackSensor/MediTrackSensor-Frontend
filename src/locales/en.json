@@ -296,6 +296,8 @@
     "fieldPlate": "Transport plate",
     "fieldTransportType": "Type of transport",
     "fieldMedication": "Type of medication",
+    "fieldEstablishment": "Establishment",
+    "noEstablishmentForTransport": "Register an establishment before adding transports.",
     "sensorsHint": "Required parameters for the medication type are pre-selected; enable others if you want them measured.",
     "confirm": "Confirm",
     "saving": "Saving…",

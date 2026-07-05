@@ -296,6 +296,8 @@
     "fieldPlate": "Placa de transporte",
     "fieldTransportType": "Tipo de transporte",
     "fieldMedication": "Tipo de medicamento",
+    "fieldEstablishment": "Establecimiento",
+    "noEstablishmentForTransport": "Primero registra un establecimiento antes de agregar transportes.",
     "sensorsHint": "Los parámetros requeridos para el tipo de medicamento vienen marcados; activa otros si deseas medirlos.",
     "confirm": "Confirmar",
     "saving": "Guardando…",

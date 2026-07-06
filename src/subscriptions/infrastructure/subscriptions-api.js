@@ -38,7 +38,9 @@ export class SubscriptionsApi extends BaseApi {
      * @returns {Promise<import('axios').AxiosResponse<Object>>}
      */
     createSubscription(resource) {
-        return this.#subscriptionsEndpoint.create(resource);
+        const adminId = resource.admin_id;
+        const { admin_id: _adminId, ...body } = resource;
+        return this.http.post(`/admins/${adminId}/subscriptions`, body);
     }
 
     /**

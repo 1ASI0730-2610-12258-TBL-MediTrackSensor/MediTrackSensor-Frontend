@@ -30,7 +30,9 @@ export class EstablishmentApi extends BaseApi {
     }
 
     createEstablishment(resource) {
-        return this.#establishmentsEndpoint.create(resource);
+        const adminId = resource.admin_id;
+        const { admin_id: _adminId, ...body } = resource;
+        return this.http.post(`/admins/${adminId}/establishments`, body);
     }
 
     updateEstablishment(resource) {
@@ -50,11 +52,19 @@ export class EstablishmentApi extends BaseApi {
     }
 
     createOperator(resource) {
-        return this.#operatorsEndpoint.create(resource);
+        const establishmentId = resource.establishment_id;
+        const { establishment_id: _estId, alerts_answered: _alerts, ...body } = resource;
+        return this.http.post(`/establishments/${establishmentId}/operators`, {
+            schedule: body.schedule,
+            users_id: body.users_id,
+        });
     }
 
     updateOperator(resource) {
-        return this.#operatorsEndpoint.update(resource.id, resource);
+        const establishmentId = resource.establishment_id;
+        return this.http.put(`/establishments/${establishmentId}/operators/${resource.id}`, {
+            schedule: resource.schedule,
+        });
     }
 
     incrementOperatorAlert(id) {

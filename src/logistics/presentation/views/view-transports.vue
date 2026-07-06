@@ -3,7 +3,6 @@ import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import useLogisticsStore from '../../application/logistics.store.js';
-import { isMockMode } from '../../../shared/infrastructure/mocks/mock-config.js';
 
 const logisticsStore = useLogisticsStore();
 const router = useRouter();
@@ -16,7 +15,7 @@ const searchQuery = ref('');
 onMounted(async () => {
   try {
     transports.value = await logisticsStore.fetchTransportsAsync();
-    if (!isMockMode()) logisticsStore.startSimulation(8000);
+    logisticsStore.startSimulation(8000);
   } catch (error) {
     console.error('Error loading transports', error);
   } finally {

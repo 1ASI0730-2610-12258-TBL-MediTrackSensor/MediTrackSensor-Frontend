@@ -5,8 +5,6 @@ import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import useLogisticsStore from '../../application/logistics.store.js';
 import useEstablishmentStore from '../../../establishment/application/establishment.store.js';
-import { isMockMode } from '../../../shared/infrastructure/mocks/mock-config.js';
-import { getNextMockTransportId } from '../../../shared/infrastructure/mocks/mock-database.js';
 import { readAuthSession } from '../../../iam/infrastructure/auth-session.js';
 
 const logisticsStore = useLogisticsStore();
@@ -61,13 +59,9 @@ onMounted(async () => {
     selectedEstablishmentId.value = establishmentOptions.value[0]?.id ?? null;
     noEstablishment.value = !selectedEstablishmentId.value;
 
-    if (isMockMode()) {
-      previewId.value = String(getNextMockTransportId());
-    } else {
-      const list = logisticsStore.transports;
-      const max = list.reduce((m, tr) => Math.max(m, Number(tr.id) || 0), 0);
-      previewId.value = String(max + 1);
-    }
+    const list = logisticsStore.transports;
+    const max = list.reduce((m, tr) => Math.max(m, Number(tr.id) || 0), 0);
+    previewId.value = String(max + 1);
   } catch (e) {
     console.error('transport-form onMounted error:', e);
     previewId.value = '—';

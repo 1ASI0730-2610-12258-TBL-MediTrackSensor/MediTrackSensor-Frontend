@@ -5,7 +5,6 @@ import MtConfirmDialog from '../../../shared/presentation/components/mt-confirm-
 import { Device } from '../../domain/model/device.entity.js';
 import { EstablishmentApi } from '../../../establishment/infrastructure/establishment-api.js';
 import { readAuthSession } from '../../../iam/infrastructure/auth-session.js';
-import { isMockMode } from '../../../shared/infrastructure/mocks/mock-config.js';
 
 const establishmentApi = new EstablishmentApi();
 
@@ -123,16 +122,14 @@ async function confirmRegularize() {
   pendingMetric.value = null;
 
   // Increment alerts_answered for this operator in the backend
-  if (!isMockMode()) {
-    try {
-      const session = readAuthSession();
-      const operatorId = session?.operatorId;
-      if (operatorId) {
-        await establishmentApi.incrementOperatorAlert(operatorId);
-      }
-    } catch {
-      // non-fatal — counter will sync on next reload
+  try {
+    const session = readAuthSession();
+    const operatorId = session?.operatorId;
+    if (operatorId) {
+      await establishmentApi.incrementOperatorAlert(operatorId);
     }
+  } catch {
+    // non-fatal — counter will sync on next reload
   }
 }
 </script>

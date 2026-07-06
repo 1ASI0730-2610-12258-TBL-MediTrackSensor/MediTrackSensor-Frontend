@@ -23,9 +23,6 @@ import {
 import { SignInCommand } from '../domain/sign-in.command.js';
 import { RegisterHealthEntityCommand } from '../domain/register-health-entity.command.js';
 import { RegisterOperationalStaffCommand } from '../domain/register-operational-staff.command.js';
-import { isMockMode } from '../../shared/infrastructure/mocks/mock-config.js';
-import { MockApi } from '../../shared/infrastructure/mocks/mock-api.service.js';
-import { mockDb, findMockUserByEmail } from '../../shared/infrastructure/mocks/mock-database.js';
 import { Subscription } from '../../subscriptions/domain/model/subscription.entity.js';
 import {
     validateDemoPayment,
@@ -33,47 +30,6 @@ import {
 } from '../../subscriptions/domain/model/demo-payment.gateway.js';
 
 const iamApi = new IamApi();
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function displayNameFromEmail(email) {
-    const local = String(email ?? '').split('@')[0] || 'Usuario';
-    return local.charAt(0).toUpperCase() + local.slice(1);
-}
-
-/** Builds a mock health-entity (admin) session for offline development. */
-function buildHealthEntitySession(email, mockUser = null, extra = {}) {
-    const admin = mockDb.admins[0];
-    return {
-        userId: mockUser?.id ?? null,
-        email,
-        name: mockUser?.name ?? displayNameFromEmail(email),
-        role: 'ADMIN',
-        segment: 'health-entity',
-        adminId: admin?.id ?? null,
-        entityCode: admin?.entity_code ?? mockUser?.entity_code ?? null,
-        entityName: admin?.entity_name ?? null,
-        plan: 'PROFESSIONAL',
-        ...extra,
-    };
-}
-
-/** Builds a mock operational-staff (operator) session for offline development. */
-function buildOperationalStaffSession(email, mockUser = null, extra = {}) {
-    const operator = mockDb.operators.find((op) => Number(op.users_id) === Number(mockUser?.id));
-    return {
-        userId: mockUser?.id ?? null,
-        email,
-        name: mockUser?.name ?? displayNameFromEmail(email),
-        role: 'OPERATOR',
-        segment: 'operational-staff',
-        operatorId: operator?.id ?? null,
-        establishmentId: operator?.establishment_id ?? null,
-        entityCode: mockUser?.entity_code ?? mockDb.admins[0]?.entity_code ?? null,
-        notAssigned: !operator?.establishment_id,
-        ...extra,
-    };
-}
 
 /**
  * Authenticates against the real backend and enriches the session with the
@@ -141,18 +97,12 @@ const useIamStore = defineStore('iam', () => {
 
     async function fetchUsersAsync() {
         try {
-            const response = isMockMode() ? await MockApi.getUsers() : await iamApi.getUsers();
+            const response = await iamApi.getUsers();
             users.value = UserAssembler.toEntitiesFromResponse(response);
             usersLoaded.value = true;
             return users.value;
         } catch (error) {
             errors.value.push(error);
-            if (isMockMode()) {
-                const fallback = await MockApi.getUsers();
-                users.value = UserAssembler.toEntitiesFromResponse(fallback);
-                usersLoaded.value = true;
-                return users.value;
-            }
             return [];
         }
     }
@@ -163,18 +113,12 @@ const useIamStore = defineStore('iam', () => {
 
     async function fetchAdminsAsync() {
         try {
-            const response = isMockMode() ? await MockApi.getAdmins() : await iamApi.getAdmins();
+            const response = await iamApi.getAdmins();
             admins.value = AdminAssembler.toEntitiesFromResponse(response);
             adminsLoaded.value = true;
             return admins.value;
         } catch (error) {
             errors.value.push(error);
-            if (isMockMode()) {
-                const fallback = await MockApi.getAdmins();
-                admins.value = AdminAssembler.toEntitiesFromResponse(fallback);
-                adminsLoaded.value = true;
-                return admins.value;
-            }
             return [];
         }
     }
@@ -205,22 +149,11 @@ const useIamStore = defineStore('iam', () => {
         profileEntityCode.value = admin?.entity_code ?? session?.entityCode ?? '';
         profileEntityName.value = admin?.entity_name ?? session?.entityName ?? '';
 
-        if (isMockMode()) {
-            const establishment = mockDb.establishments.find(
-                (e) => Number(e.admin_id) === Number(admin?.id),
-            );
-            profileEstablishment.value = establishment
-                ? { establishment_name: admin?.entity_name ?? establishment.establishment_name }
-                : admin
-                  ? { establishment_name: admin.entity_name }
-                  : null;
-        } else {
-            profileEstablishment.value = admin
-                ? { establishment_name: admin.entity_name }
-                : null;
-        }
+        profileEstablishment.value = admin
+            ? { establishment_name: admin.entity_name }
+            : null;
 
-        profilePlanApi.value = session?.plan ?? 'PROFESSIONAL';
+        profilePlanApi.value = session?.plan ?? 'BASIC';
     }
 
     function getUserById(id) {
@@ -247,17 +180,6 @@ const useIamStore = defineStore('iam', () => {
             return { ok: false, error: 'invalidCredentials' };
         }
 
-        if (isMockMode()) {
-            const mockUser = findMockUserByEmail(command.email);
-            if (mockUser && mockUser.password !== command.password) {
-                return { ok: false, error: 'invalidCredentials' };
-            }
-            const session = buildHealthEntitySession(command.email, mockUser);
-            writeAuthSession(session);
-            localStorage.setItem('userRole', 'health-entity');
-            return { ok: true, session };
-        }
-
         try {
             const result = await signInReal(command);
             if (!result.ok) return result;
@@ -280,25 +202,6 @@ const useIamStore = defineStore('iam', () => {
         const command = new SignInCommand({ email, password, segment: 'operational-staff' });
         if (!command.email || !command.password) {
             return { ok: false, error: 'invalidCredentials' };
-        }
-
-        if (isMockMode()) {
-            const mockUser = findMockUserByEmail(command.email);
-            if (mockUser && mockUser.password !== command.password) {
-                return { ok: false, error: 'invalidCredentials' };
-            }
-            const session = buildOperationalStaffSession(command.email, mockUser);
-            writeAuthSession(session);
-            localStorage.setItem('userRole', 'operational-staff');
-            if (session.notAssigned) {
-                return {
-                    ok: true,
-                    notAssigned: true,
-                    adminContact: mockDb.admins[0]?.entity_name ?? 'Administrador',
-                    session,
-                };
-            }
-            return { ok: true, session, notAssigned: false };
         }
 
         try {
@@ -367,10 +270,9 @@ const useIamStore = defineStore('iam', () => {
 
         await simulateDemoPaymentProcessing();
 
-        if (!isMockMode()) {
-            try {
-                const today = new Date().toISOString().split('T')[0];
-                await iamApi.createUser({
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            await iamApi.createUser({
                     name: pending.name,
                     dni: '00000000',
                     email: pending.email,
@@ -397,7 +299,6 @@ const useIamStore = defineStore('iam', () => {
                 }
                 return { ok: false, error: 'network', phase: 'registration', paymentApproved: true };
             }
-        }
 
         clearRegistrationFlow();
         return { ok: true, email: pending.email, paymentApproved: true };
@@ -414,12 +315,6 @@ const useIamStore = defineStore('iam', () => {
             return { ok: false, error: 'required' };
         }
         if (!command.entityCode) return { ok: false, error: 'entityCodeRequired' };
-
-        if (isMockMode()) {
-            const admin = mockDb.admins.find((a) => a.entity_code === command.entityCode);
-            if (!admin) return { ok: false, error: 'invalidEntityCode' };
-            return { ok: true, entityName: admin.entity_name };
-        }
 
         try {
             const admins = (await iamApi.getAdmins()).data ?? [];

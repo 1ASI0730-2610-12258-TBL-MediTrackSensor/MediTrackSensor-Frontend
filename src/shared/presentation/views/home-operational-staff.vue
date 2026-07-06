@@ -4,7 +4,6 @@ import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { readAuthSession } from '../../../iam/infrastructure/auth-session.js';
 import useEstablishmentStore from '../../../establishment/application/establishment.store.js';
-import { isMockMode } from '../../infrastructure/mocks/mock-config.js';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -16,22 +15,20 @@ const establishmentName = ref('—');
 const alertsAnswered = ref(null);
 
 onMounted(async () => {
-  if (!isMockMode()) {
-    try {
-      await establishmentStore.fetchOperatorsAsync();
-      await establishmentStore.fetchEstablishmentsAsync();
-      const operatorId = session?.operatorId;
-      const op = operatorId
-        ? establishmentStore.operators.find((o) => Number(o.id) === Number(operatorId))
-        : null;
-      alertsAnswered.value = op?.alerts_answered ?? 0;
-      const est = op?.establishment_id
-        ? establishmentStore.establishments.find((e) => Number(e.id) === Number(op.establishment_id))
-        : null;
-      if (est) establishmentName.value = est.establishment_name;
-    } catch {
-      // non-critical
-    }
+  try {
+    await establishmentStore.fetchOperatorsAsync();
+    await establishmentStore.fetchEstablishmentsAsync();
+    const operatorId = session?.operatorId;
+    const op = operatorId
+      ? establishmentStore.operators.find((o) => Number(o.id) === Number(operatorId))
+      : null;
+    alertsAnswered.value = op?.alerts_answered ?? 0;
+    const est = op?.establishment_id
+      ? establishmentStore.establishments.find((e) => Number(e.id) === Number(op.establishment_id))
+      : null;
+    if (est) establishmentName.value = est.establishment_name;
+  } catch {
+    // non-critical
   }
 });
 

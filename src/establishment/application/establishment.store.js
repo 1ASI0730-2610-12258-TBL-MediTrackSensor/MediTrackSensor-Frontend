@@ -3,8 +3,6 @@ import { computed, ref } from 'vue';
 import { EstablishmentApi } from '../infrastructure/establishment-api.js';
 import { EstablishmentAssembler } from '../infrastructure/establishment.assembler.js';
 import { OperatorAssembler } from '../infrastructure/operator.assembler.js';
-import { isMockMode } from '../../shared/infrastructure/mocks/mock-config.js';
-import { MockApi } from '../../shared/infrastructure/mocks/mock-api.service.js';
 
 const establishmentApi = new EstablishmentApi();
 
@@ -25,20 +23,12 @@ const useEstablishmentStore = defineStore('establishment', () => {
 
     async function fetchEstablishmentsAsync() {
         try {
-            const response = isMockMode()
-                ? await MockApi.getEstablishments()
-                : await establishmentApi.getEstablishments();
+            const response = await establishmentApi.getEstablishments();
             establishments.value = EstablishmentAssembler.toEntitiesFromResponse(response);
             establishmentsLoaded.value = true;
             return establishments.value;
         } catch (error) {
             errors.value.push(error);
-            if (isMockMode()) {
-                const fallback = await MockApi.getEstablishments();
-                establishments.value = EstablishmentAssembler.toEntitiesFromResponse(fallback);
-                establishmentsLoaded.value = true;
-                return establishments.value;
-            }
             return [];
         }
     }
@@ -49,20 +39,12 @@ const useEstablishmentStore = defineStore('establishment', () => {
 
     async function fetchOperatorsAsync() {
         try {
-            const response = isMockMode()
-                ? await MockApi.getOperators()
-                : await establishmentApi.getOperators();
+            const response = await establishmentApi.getOperators();
             operators.value = OperatorAssembler.toEntitiesFromResponse(response);
             operatorsLoaded.value = true;
             return operators.value;
         } catch (error) {
             errors.value.push(error);
-            if (isMockMode()) {
-                const fallback = await MockApi.getOperators();
-                operators.value = OperatorAssembler.toEntitiesFromResponse(fallback);
-                operatorsLoaded.value = true;
-                return operators.value;
-            }
             return [];
         }
     }
@@ -72,24 +54,11 @@ const useEstablishmentStore = defineStore('establishment', () => {
     }
 
     async function createEstablishmentAsync(payload) {
-        try {
-            const response = isMockMode()
-                ? await MockApi.createEstablishment(payload)
-                : await establishmentApi.createEstablishment(payload);
-            const created = EstablishmentAssembler.toEntityFromResource(response.data);
-            establishments.value = [...establishments.value, created];
-            establishmentsLoaded.value = true;
-            return created;
-        } catch (error) {
-            errors.value.push(error);
-            if (isMockMode()) {
-                const response = await MockApi.createEstablishment(payload);
-                const created = EstablishmentAssembler.toEntityFromResource(response.data);
-                establishments.value = [...establishments.value, created];
-                return created;
-            }
-            throw error;
-        }
+        const response = await establishmentApi.createEstablishment(payload);
+        const created = EstablishmentAssembler.toEntityFromResource(response.data);
+        establishments.value = [...establishments.value, created];
+        establishmentsLoaded.value = true;
+        return created;
     }
 
     function getEstablishmentById(id) {
@@ -103,52 +72,21 @@ const useEstablishmentStore = defineStore('establishment', () => {
     }
 
     async function createOperatorAsync(payload) {
-        try {
-            const response = isMockMode()
-                ? await MockApi.createOperator(payload)
-                : await establishmentApi.createOperator(payload);
-            const created = OperatorAssembler.toEntityFromResource(response.data);
-            operators.value = [...operators.value, created];
-            operatorsLoaded.value = true;
-            return created;
-        } catch (error) {
-            errors.value.push(error);
-            if (isMockMode()) {
-                const response = await MockApi.createOperator(payload);
-                const created = OperatorAssembler.toEntityFromResource(response.data);
-                operators.value = [...operators.value, created];
-                return created;
-            }
-            throw error;
-        }
+        const response = await establishmentApi.createOperator(payload);
+        const created = OperatorAssembler.toEntityFromResource(response.data);
+        operators.value = [...operators.value, created];
+        operatorsLoaded.value = true;
+        return created;
     }
 
     async function updateOperatorAsync(payload) {
-        try {
-            const response = isMockMode()
-                ? await MockApi.updateOperator(payload.id, payload)
-                : await establishmentApi.updateOperator(payload);
-            const updated = OperatorAssembler.toEntityFromResource(response.data);
-            const index = operators.value.findIndex((o) => o.id === updated.id);
-            if (index !== -1) operators.value[index] = updated;
-            return updated;
-        } catch (error) {
-            errors.value.push(error);
-            if (isMockMode()) {
-                const response = await MockApi.updateOperator(payload.id, payload);
-                const updated = OperatorAssembler.toEntityFromResource(response.data);
-                const index = operators.value.findIndex((o) => o.id === updated.id);
-                if (index !== -1) operators.value[index] = updated;
-                return updated;
-            }
-            throw error;
-        }
+        const response = await establishmentApi.updateOperator(payload);
+        const updated = OperatorAssembler.toEntityFromResource(response.data);
+        const index = operators.value.findIndex((o) => o.id === updated.id);
+        if (index !== -1) operators.value[index] = updated;
+        return updated;
     }
 
-    /**
-     * Assigns one or more operator users to an establishment (creates or updates /operators).
-     * @param {{ userIds: number[], establishmentId: number|string }} params
-     */
     async function assignOperatorsToEstablishmentAsync({ userIds, establishmentId }) {
         const estId = Number(establishmentId);
         const results = [];

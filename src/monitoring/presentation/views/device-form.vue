@@ -4,8 +4,6 @@ import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import useMonitoringStore from '../../application/monitoring.store.js';
-import { isMockMode } from '../../../shared/infrastructure/mocks/mock-config.js';
-import { getNextMockDeviceId } from '../../../shared/infrastructure/mocks/mock-database.js';
 import { readAuthSession } from '../../../iam/infrastructure/auth-session.js';
 
 const monitoringStore = useMonitoringStore();
@@ -45,13 +43,9 @@ const sensorDefs = [
 
 onMounted(async () => {
   await monitoringStore.fetchDevicesAsync();
-  if (isMockMode()) {
-    previewId.value = String(getNextMockDeviceId());
-  } else {
-    const list = monitoringStore.devices;
-    const max = list.reduce((m, d) => Math.max(m, Number(d.id) || 0), 0);
-    previewId.value = String(max + 1);
-  }
+  const list = monitoringStore.devices;
+  const max = list.reduce((m, d) => Math.max(m, Number(d.id) || 0), 0);
+  previewId.value = String(max + 1);
 });
 
 // Backend enum values (PascalCase, JsonStringEnumConverter)

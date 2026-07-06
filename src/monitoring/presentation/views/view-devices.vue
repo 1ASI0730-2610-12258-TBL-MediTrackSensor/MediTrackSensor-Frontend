@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n';
 import { useToast } from 'primevue/usetoast';
 import useMonitoringStore from '../../application/monitoring.store.js';
 import MtConfirmDialog from '../../../shared/presentation/components/mt-confirm-dialog.vue';
-import { isMockMode } from '../../../shared/infrastructure/mocks/mock-config.js';
 
 const monitoringStore = useMonitoringStore();
 const router = useRouter();
@@ -23,7 +22,7 @@ onMounted(async () => {
   try {
     devices.value = await monitoringStore.fetchDevicesAsync();
     // Start sensor simulation in real mode (every 8 seconds)
-    if (!isMockMode()) monitoringStore.startSimulation(8000);
+    monitoringStore.startSimulation(8000);
   } catch (error) {
     console.error('Error loading devices', error);
   } finally {

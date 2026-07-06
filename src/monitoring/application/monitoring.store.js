@@ -63,7 +63,7 @@ const useMonitoringStore = defineStore('monitoring', () => {
     }
 
     async function deleteDeviceAsync(device) {
-        await monitoringApi.deleteDevice(device.id);
+        await monitoringApi.deleteDevice(device.id, device.establishment_id);
         const index = devices.value.findIndex((d) => d.id === device.id);
         if (index !== -1) devices.value.splice(index, 1);
         return true;
@@ -75,7 +75,7 @@ const useMonitoringStore = defineStore('monitoring', () => {
             devices.value.map(async (device) => {
                 try {
                     const reading = generateSensorReading(device.type_of_medication);
-                    await monitoringApi.updateSensorData(device.id, reading);
+                    await monitoringApi.updateSensorData(device.id, reading, device.establishment_id);
                     const idx = devices.value.findIndex((d) => d.id === device.id);
                     if (idx !== -1) devices.value[idx] = { ...devices.value[idx], ...reading };
                 } catch { /* retry next tick */ }

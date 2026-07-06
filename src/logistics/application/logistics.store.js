@@ -68,7 +68,7 @@ const useLogisticsStore = defineStore('logistics', () => {
             transports.value.map(async (transport) => {
                 try {
                     const reading = generateSensorReading(transport.type_of_medication);
-                    await logisticsApi.updateSensorData(transport.id, reading);
+                    await logisticsApi.updateSensorData(transport.id, reading, transport.establishment_id);
                     const idx = transports.value.findIndex((t) => t.id === transport.id);
                     if (idx !== -1) transports.value[idx] = { ...transports.value[idx], ...reading };
                 } catch { /* non-fatal */ }

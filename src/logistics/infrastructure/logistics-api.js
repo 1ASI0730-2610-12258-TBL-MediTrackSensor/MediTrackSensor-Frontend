@@ -27,18 +27,26 @@ export class LogisticsApi extends BaseApi {
     }
 
     createTransport(resource) {
-        return this.#transportsEndpoint.create(resource);
+        const establishmentId = resource.establishment_id;
+        const { establishment_id: _estId, ...body } = resource;
+        return this.http.post(`/establishments/${establishmentId}/transports`, body);
     }
 
     updateTransport(resource) {
         return this.#transportsEndpoint.update(resource.id, resource);
     }
 
-    deleteTransport(id) {
-        return this.#transportsEndpoint.delete(id);
+    updateSensorData(id, sensorData, establishmentId) {
+        if (establishmentId) {
+            return this.http.put(`/establishments/${establishmentId}/transports/${id}/sensor-data`, sensorData);
+        }
+        return this.#transportsEndpoint.http.put(`${transportsEndpointPath}/${id}/sensor-data`, sensorData);
     }
 
-    updateSensorData(id, sensorData) {
-        return this.#transportsEndpoint.http.put(`${transportsEndpointPath}/${id}/sensor-data`, sensorData);
+    deleteTransport(id, establishmentId) {
+        if (establishmentId) {
+            return this.http.delete(`/establishments/${establishmentId}/transports/${id}`);
+        }
+        return this.#transportsEndpoint.delete(id);
     }
 }
